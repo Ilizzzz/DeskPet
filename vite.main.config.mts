@@ -1,5 +1,5 @@
 import { defineConfig } from 'vite';
 
 export default defineConfig({
-  build: { rolldownOptions: { external: ['uiohook-napi'] } },
+  build: { rolldownOptions: { external: ['uiohook-napi', 'node:sqlite'] } },
 });

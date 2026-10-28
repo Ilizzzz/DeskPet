@@ -3,6 +3,7 @@ import {
   BrowserWindow,
   dialog,
   globalShortcut,
+  ipcMain,
   Menu,
   nativeImage,
   powerMonitor,
@@ -16,6 +17,8 @@ import { readPosition, restorePosition } from './window-position';
 import { TRAY_ICON } from './tray-icon';
 import { isInsidePet } from './pet-hit-test';
 import { InputMonitor } from '../services/input-monitor/input-monitor';
+import { StatisticsStore } from '../services/statistics/statistics-store';
+import type { DailyStatistics } from '../shared/types/statistics';
 import {
   readInputPreferences,
   writeInputPreferences,
@@ -24,13 +27,39 @@ import {
 const SIZE = { width: 180, height: 180 };
 let petWindow: BrowserWindow | undefined;
 let tray: Tray | undefined;
+let statisticsWindow: BrowserWindow | undefined;
+let statisticsStore: StatisticsStore | undefined;
+const pending: DailyStatistics[] = [];
 let quitting = false;
 let clickThrough = false;
 let alwaysOnTop = true;
 let ignoringMouse = true;
 let inputPreferences = { consentGiven: false, enabled: false };
 let systemSuspended = false;
-const inputMonitor = new InputMonitor(() => updateTray());
+const inputMonitor = new InputMonitor((_counts, days) => {
+  pending.push(...days);
+  try {
+    persistPending();
+  } catch (error) {
+    console.error('无法保存统计数据。', error);
+    dialog.showErrorBox('统计保存失败', '统计数据暂存在内存中，请检查磁盘空间和用户数据目录。');
+    setImmediate(() => {
+      void setInputEnabled(false);
+    });
+  }
+  updateTray();
+});
+function persistPending(): void {
+  if (!statisticsStore) throw new Error('统计数据库不可用');
+  while (pending.length) {
+    statisticsStore.add(pending[0]);
+    pending.shift();
+  }
+}
+function flushStatistics(): void {
+  inputMonitor.flush();
+  persistPending();
+}
 
 function inputPreferencesPath(): string {
   return path.join(app.getPath('userData'), 'input-preferences.json');
@@ -43,7 +72,7 @@ async function setInputEnabled(enabled: boolean): Promise<void> {
       title: '启用键鼠次数统计',
       message: 'DeskPet 将监听全局键盘按下和鼠标点击。',
       detail:
-        '只汇总次数；不保存按键内容、输入顺序、鼠标位置或轨迹。可随时从托盘或 Ctrl+Alt+Shift+P 暂停。当前阶段的计数仅保留在本次运行中。',
+        '只汇总次数；不保存按键内容、输入顺序、鼠标位置或轨迹。可随时从托盘或 Ctrl+Alt+Shift+P 暂停。每日汇总保存在本机，可在统计窗口中导出或清除。',
       buttons: ['启用统计', '保持暂停'],
       defaultId: 1,
       cancelId: 1,
@@ -112,6 +141,7 @@ function updateTray(): void {
           void setInputEnabled(!inputPreferences.enabled);
         },
       },
+      { label: '查看统计', click: () => createStatisticsWindow() },
       { type: 'separator' },
       {
         label: '显示桌宠',
@@ -155,6 +185,89 @@ function updateTray(): void {
     ]),
   );
 }
+function createStatisticsWindow(): void {
+  if (statisticsWindow && !statisticsWindow.isDestroyed()) {
+    statisticsWindow.show();
+    statisticsWindow.focus();
+    return;
+  }
+  const window = new BrowserWindow({
+    width: 720,
+    height: 650,
+    title: 'DeskPet 统计',
+    show: false,
+    webPreferences: {
+      preload: path.join(__dirname, 'preload.cjs'),
+      contextIsolation: true,
+      nodeIntegration: false,
+      sandbox: true,
+    },
+  });
+  statisticsWindow = window;
+  window.on('closed', () => {
+    statisticsWindow = undefined;
+  });
+  window.once('ready-to-show', () => window.show());
+  window.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
+  window.webContents.on('will-navigate', (event) => event.preventDefault());
+  if (MAIN_WINDOW_VITE_DEV_SERVER_URL)
+    void window.loadURL(MAIN_WINDOW_VITE_DEV_SERVER_URL + '?view=statistics');
+  else
+    void window.loadFile(path.join(__dirname, `../renderer/${MAIN_WINDOW_VITE_NAME}/index.html`), {
+      query: { view: 'statistics' },
+    });
+}
+function registerStatisticsIpc(): void {
+  const verify = (event: Electron.IpcMainInvokeEvent, args: unknown[]) => {
+    if (
+      !statisticsWindow ||
+      event.sender !== statisticsWindow.webContents ||
+      event.senderFrame !== statisticsWindow.webContents.mainFrame ||
+      args.length !== 0
+    )
+      throw new Error('无效的统计请求');
+  };
+  ipcMain.handle('statistics:get', (event, ...args: unknown[]) => {
+    verify(event, args);
+    flushStatistics();
+    return statisticsStore!.snapshot();
+  });
+  ipcMain.handle('statistics:clear', (event, ...args: unknown[]) => {
+    verify(event, args);
+    const choice = dialog.showMessageBoxSync(statisticsWindow!, {
+      type: 'warning',
+      message: '清除全部键鼠统计？',
+      detail: '此操作无法撤销。',
+      buttons: ['取消', '清除'],
+      defaultId: 0,
+      cancelId: 0,
+    });
+    if (choice !== 1) return false;
+    flushStatistics();
+    statisticsStore!.clear();
+    return true;
+  });
+  ipcMain.handle('statistics:export', (event, ...args: unknown[]) => {
+    verify(event, args);
+    flushStatistics();
+    const file = dialog.showSaveDialogSync(statisticsWindow!, {
+      title: '导出统计数据',
+      defaultPath: 'deskpet-statistics.csv',
+      filters: [{ name: 'CSV', extensions: ['csv'] }],
+    });
+    if (!file) return false;
+    const rows = statisticsStore!
+      .all()
+      .map((row) => `${row.date},${row.keyboardCount},${row.mouseCount}`);
+    fs.writeFileSync(
+      file,
+      '\ufeffdate,keyboard_count,mouse_count\r\n' + rows.join('\r\n') + '\r\n',
+      'utf8',
+    );
+    return true;
+  });
+}
+
 function createWindow(): void {
   const position = loadPosition();
   const window = new BrowserWindow({
@@ -223,6 +336,17 @@ else {
         });
       return;
     }
+    try {
+      statisticsStore = new StatisticsStore(
+        path.join(app.getPath('userData'), 'statistics.sqlite'),
+      );
+    } catch (error) {
+      console.error('统计数据库初始化失败。', error);
+      dialog.showErrorBox('统计数据库不可用', '无法打开统计数据库，应用将退出以保护数据。');
+      app.quit();
+      return;
+    }
+    registerStatisticsIpc();
     inputPreferences = readInputPreferences(inputPreferencesPath());
     createWindow();
     tray = new Tray(nativeImage.createFromDataURL(TRAY_ICON));
@@ -258,5 +382,15 @@ else {
 }
 app.on('before-quit', () => {
   inputMonitor.stop();
+  try {
+    if (statisticsStore) {
+      persistPending();
+      statisticsStore.close();
+      statisticsStore = undefined;
+    }
+  } catch (error) {
+    console.error('退出时统计数据保存失败。', error);
+    dialog.showErrorBox('统计保存失败', '部分统计数据未能保存，请检查用户数据目录。');
+  }
   globalShortcut.unregisterAll();
 });

@@ -1,4 +1,5 @@
 import { InputCounter, type InputCounts } from './input-counter';
+import type { DailyStatistics } from '../../shared/types/statistics';
 
 type Hook = (typeof import('uiohook-napi'))['uIOhook'];
 
@@ -12,7 +13,7 @@ export class InputMonitor {
   private totalKeyboard = 0;
   private totalMouse = 0;
 
-  constructor(private readonly onBatch: (counts: InputCounts) => void) {}
+  constructor(private readonly onBatch: (counts: InputCounts, days: DailyStatistics[]) => void) {}
 
   async start(): Promise<void> {
     this.desiredRunning = true;
@@ -55,12 +56,20 @@ export class InputMonitor {
   }
 
   flush(): void {
-    const batch = this.counter.flush();
+    const { days, periodSeconds } = this.counter.flushDays();
+    const batch = days.reduce(
+      (sum, day) => ({
+        keyboardCount: sum.keyboardCount + day.keyboardCount,
+        mouseCount: sum.mouseCount + day.mouseCount,
+        periodSeconds,
+      }),
+      { keyboardCount: 0, mouseCount: 0, periodSeconds },
+    );
     if (batch.keyboardCount === 0 && batch.mouseCount === 0) return;
     this.totalKeyboard += batch.keyboardCount;
     this.totalMouse += batch.mouseCount;
     // 仅传递聚合值，不转发或记录原生事件。
-    this.onBatch(batch);
+    this.onBatch(batch, days);
   }
 
   get totals() {

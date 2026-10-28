@@ -31,6 +31,7 @@ describe('preload bridge', () => {
       'drinkWater',
       'endPetDrag',
       'exportStatistics',
+      'getAppInstallInfo',
       'getAppSettings',
       'getAppearance',
       'getCheckin',
@@ -46,6 +47,7 @@ describe('preload bridge', () => {
       'listNotes',
       'listTodos',
       'listTools',
+      'openAppFolder',
       'openDashboard',
       'openNote',
       'openPetMenu',
@@ -62,6 +64,7 @@ describe('preload bridge', () => {
       'snoozeSedentary',
       'startFocus',
       'stopFocus',
+      'uninstallApp',
       'updateAppPreference',
       'updateTodo',
     ]);

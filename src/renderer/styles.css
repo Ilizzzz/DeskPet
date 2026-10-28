@@ -2542,3 +2542,59 @@ progress::-webkit-progress-value {
     transition-duration: 0.001ms !important;
   }
 }
+
+/* Settings: ��װ��ж�� */
+.install-summary {
+  display: flex;
+  justify-content: space-between;
+  gap: 18px;
+  align-items: flex-start;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 11px;
+  background: #fcf9f6;
+}
+
+.install-summary > div:first-child {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.install-summary small {
+  overflow-wrap: anywhere;
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.uninstall-actions {
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px dashed var(--line-strong);
+}
+
+.uninstall-actions p,
+.install-hint {
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.uninstall-actions .actions {
+  margin-top: 12px;
+}
+
+.install-hint {
+  margin-top: 12px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: #f8f3ee;
+}
+
+@media (max-width: 700px) {
+  .install-summary {
+    flex-direction: column;
+  }
+}

@@ -132,6 +132,17 @@
   `npm run check:package` 通过；重新生成 `1.1.1` 安装包和免安装压缩包。
 - 仍需手工验收：在另一台干净 Windows 电脑上实际安装并启用键鼠统计、确认脚本可加载。
 
+## TASK-013：控制中心一键卸载（1.1.2）
+
+- 新增 `src/main/install-info.ts` 识别安装版（存在 Squirrel `Update.exe`）、免安装版和开发模式。
+- 控制中心“设置 → 安装与卸载”展示版本与程序/数据目录，可打开目录、一键卸载；
+  安装版由主进程确认后调用 `Update.exe --uninstall`，支持保留数据或卸载并清除数据，
+  卸载前停止监听、提交统计并清理位置文件/诊断日志。免安装版与开发模式给出对应说明。
+- 新增 IPC `app:install-info` / `app:open-folder` / `app:uninstall`，Preload 只暴露固定操作。
+- 验证：类型检查、ESLint、Prettier、77 项测试通过；重新生成 `1.1.2` 安装包和免安装包。
+- 仍需手工验收：在真实安装版上分别测试“保留数据卸载”和“清除数据卸载”，
+  确认 Windows 应用列表、快捷方式和 `%APPDATA%\DeskPet` 的行为符合预期。
+
 ## TASK-004 至 TASK-010 验证
 
 - 已通过 `npm run typecheck`、`npm run lint`、`npm run format:check` 和 `npm test`（21 个测试文件，33 个测试）。

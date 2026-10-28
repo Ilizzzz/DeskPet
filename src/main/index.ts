@@ -9,14 +9,17 @@ import {
   Notification,
   powerMonitor,
   screen,
+  shell,
   Tray,
 } from 'electron';
+import { spawn } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import started from 'electron-squirrel-startup';
 import { readPosition, restorePosition, shiftForWindowResize } from './window-position';
 import { TRAY_ICON } from './tray-icon';
 import { isInsidePet } from './pet-hit-test';
+import { resolveInstallInfo } from './install-info';
 import { InputMonitor } from '../services/input-monitor/input-monitor';
 import { StatisticsStore } from '../services/statistics/statistics-store';
 import type { DailyStatistics } from '../shared/types/statistics';
@@ -128,6 +131,47 @@ function logInputFailure(error: unknown): string {
   return file;
 }
 
+/**
+ * 卸载后清理残留：Squirrel 的 Update.exe 会删除程序主体，但可能留下 Update.exe 和
+ * `.dead` 目录；这里在应用退出后用独立进程重试删除，避免“卸载完还留一个文件夹”。
+ * 只在用户确认卸载后调用，路径均来自主进程自身解析结果。
+ */
+function scheduleRemoval(paths: string[]): void {
+  if (paths.length === 0) return;
+  const list = paths.map((target) => `'${target.replaceAll("'", "''")}'`).join(', ');
+  const script = [
+    'Start-Sleep -Seconds 5',
+    `$paths = @(${list})`,
+    'for ($attempt = 0; $attempt -lt 30; $attempt++) {',
+    '  $remaining = @($paths | Where-Object { Test-Path -LiteralPath $_ })',
+    '  if ($remaining.Count -eq 0) { break }',
+    '  foreach ($path in $remaining) {',
+    '    try { Remove-Item -LiteralPath $path -Recurse -Force -ErrorAction Stop } catch {}',
+    '  }',
+    '  Start-Sleep -Seconds 1',
+    '}',
+  ].join('; ');
+  try {
+    const child = spawn(
+      'powershell.exe',
+      [
+        '-NoProfile',
+        '-NonInteractive',
+        '-WindowStyle',
+        'Hidden',
+        '-ExecutionPolicy',
+        'Bypass',
+        '-Command',
+        script,
+      ],
+      { detached: true, stdio: 'ignore', windowsHide: true },
+    );
+    child.unref();
+  } catch (error) {
+    console.error('无法启动卸载清理进程。', error);
+  }
+}
+
 async function setInputEnabled(enabled: boolean, interactive = true): Promise<void> {
   if (enabled && !inputPreferences.consentGiven) {
     const response = dialog.showMessageBoxSync({
@@ -182,6 +226,44 @@ async function setInputEnabled(enabled: boolean, interactive = true): Promise<vo
 
 function positionPath(): string {
   return path.join(app.getPath('userData'), 'window-position.json');
+}
+
+/** 读取当前安装形态；Squirrel 安装版才有 Update.exe。 */
+function currentInstallInfo() {
+  return resolveInstallInfo({
+    isPackaged: app.isPackaged,
+    executablePath: process.execPath,
+    version: app.getVersion(),
+    userDataPath: app.getPath('userData'),
+  });
+}
+
+/** 卸载前按用户选择清除本地数据；只清理业务数据，不删除正在使用的数据库文件。 */
+function clearLocalDataForUninstall(): void {
+  try {
+    inputMonitor.stop();
+    persistPending();
+    statisticsStore?.resetUserData();
+  } catch (error) {
+    console.error('卸载前清除用户数据失败。', error);
+  }
+  inputError = null;
+  inputPreferences = { consentGiven: false, enabled: false };
+  try {
+    writeInputPreferences(inputPreferencesPath(), inputPreferences);
+  } catch (error) {
+    console.error('卸载前保存监听设置失败。', error);
+  }
+  for (const file of [
+    positionPath(),
+    path.join(app.getPath('userData'), 'input-diagnostics.log'),
+  ]) {
+    try {
+      fs.rmSync(file, { force: true });
+    } catch (error) {
+      console.error('卸载前删除本地文件失败。', error);
+    }
+  }
 }
 function loadPosition() {
   try {
@@ -481,6 +563,64 @@ function registerStatisticsIpc(): void {
   ipcMain.handle('pet:menu', (event, ...args: unknown[]) => {
     verifyPet(event, args);
     if (petWindow) Menu.buildFromTemplate(petMenuItems()).popup({ window: petWindow });
+  });
+  ipcMain.handle('app:install-info', (event, ...args: unknown[]) => {
+    verify(event, args);
+    return currentInstallInfo();
+  });
+  ipcMain.handle('app:open-folder', async (event, ...args: unknown[]) => {
+    if (args.length !== 1 || (args[0] !== 'install' && args[0] !== 'userData'))
+      throw new Error('无效的目录请求');
+    verify(event, []);
+    const info = currentInstallInfo();
+    const target = args[0] === 'install' ? info.installPath : info.userDataPath;
+    const error = await shell.openPath(target);
+    if (error) throw new Error(`无法打开目录：${error}`);
+  });
+  ipcMain.handle('app:uninstall', (event, ...args: unknown[]) => {
+    if (args.length !== 1 || typeof args[0] !== 'boolean') throw new Error('无效的卸载请求');
+    verify(event, []);
+    const clearData = args[0];
+    const info = currentInstallInfo();
+    if (info.kind === 'development') return 'development';
+    if (info.kind === 'portable' || !info.updateExePath) return 'portable';
+    const choice = dialog.showMessageBoxSync(statisticsWindow!, {
+      type: 'warning',
+      title: '卸载 DeskPet',
+      message: '确定卸载 DeskPet？',
+      detail: clearData
+        ? '程序会被卸载，键鼠统计、成长、装扮、便签和设置都会被清除，且无法恢复。'
+        : '程序会被卸载，但本地数据（等级、装扮、便签、设置等）会保留，重新安装后可继续使用。',
+      buttons: ['取消', clearData ? '卸载并清除数据' : '卸载'],
+      defaultId: 0,
+      cancelId: 0,
+      noLink: true,
+    });
+    if (choice !== 1) return 'cancelled';
+    if (clearData) clearLocalDataForUninstall();
+    try {
+      // Squirrel 安装版在其安装根目录提供 Update.exe，卸载由它负责删除程序和快捷方式。
+      const child = spawn(info.updateExePath, ['--uninstall'], {
+        detached: true,
+        stdio: 'ignore',
+        cwd: info.installPath,
+      });
+      child.unref();
+    } catch (error) {
+      console.error('无法启动卸载程序。', error);
+      dialog.showErrorBox(
+        '卸载失败',
+        '无法启动 Squirrel 卸载程序，请在 Windows“设置 → 应用 → 已安装的应用”中卸载 DeskPet。',
+      );
+      return 'failed';
+    }
+    // Update.exe 一般只删除 app-* 与快捷方式，这里彻底清掉安装目录；
+    // 选择“卸载并清除数据”时同时删除用户数据目录。
+    scheduleRemoval(clearData ? [info.installPath, info.userDataPath] : [info.installPath]);
+    quitting = true;
+    // 给 Update.exe 一点时间启动；应用退出后它才能删除程序目录。
+    setTimeout(() => app.quit(), 400);
+    return 'started';
   });
   ipcMain.handle('notes:list', (event, ...args: unknown[]) => {
     verify(event, args);

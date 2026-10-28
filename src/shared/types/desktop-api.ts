@@ -12,6 +12,7 @@ import type { AnniversaryView } from './anniversary';
 import type { Countdown } from './countdown';
 import type { Todo, TodoChange } from './todo';
 import type { WaterSettings, WaterSnapshot } from './water';
+import type { AppInstallInfo, UninstallStatus } from './app-install';
 
 /** 渲染进程可用的最小化平台能力集合，全部经 Preload 的 contextBridge 暴露。 */
 export interface DesktopApi {
@@ -68,4 +69,8 @@ export interface DesktopApi {
   beginPetDrag(): Promise<void>;
   endPetDrag(): Promise<void>;
   openPetMenu(): Promise<void>;
+  getAppInstallInfo(): Promise<AppInstallInfo>;
+  openAppFolder(target: 'install' | 'userData'): Promise<void>;
+  /** 仅安装版可用；主进程负责确认对话框和调用 Squirrel Update.exe。 */
+  uninstallApp(clearData: boolean): Promise<UninstallStatus>;
 }

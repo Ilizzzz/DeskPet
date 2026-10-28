@@ -54,5 +54,8 @@ const desktopApi: DesktopApi = {
   beginPetDrag: () => ipcRenderer.invoke('pet:drag-start'),
   endPetDrag: () => ipcRenderer.invoke('pet:drag-end'),
   openPetMenu: () => ipcRenderer.invoke('pet:menu'),
+  getAppInstallInfo: () => ipcRenderer.invoke('app:install-info'),
+  openAppFolder: (target) => ipcRenderer.invoke('app:open-folder', target),
+  uninstallApp: (clearData) => ipcRenderer.invoke('app:uninstall', clearData),
 };
 contextBridge.exposeInMainWorld('desktopApi', desktopApi);

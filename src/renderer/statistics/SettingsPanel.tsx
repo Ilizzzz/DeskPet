@@ -1,7 +1,14 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { UI_ICONS } from '../../data/catalogs/appearance';
+import type { AppInstallInfo } from '../../shared/types/app-install';
 import type { AppPreferenceChange, AppSettingsSnapshot } from '../../shared/types/settings';
 import { CatalogIcon } from './CatalogIcon';
+
+const INSTALL_KIND_LABELS: Record<AppInstallInfo['kind'], string> = {
+  installed: '安装版',
+  portable: '免安装版',
+  development: '开发模式',
+};
 
 export function SettingsPanel({
   settings,
@@ -14,6 +21,15 @@ export function SettingsPanel({
 }) {
   const [message, setMessage] = useState('');
   const [busy, setBusy] = useState(false);
+  const [installInfo, setInstallInfo] = useState<AppInstallInfo>();
+  const [uninstalling, setUninstalling] = useState(false);
+
+  useEffect(() => {
+    void window.desktopApi
+      .getAppInstallInfo()
+      .then(setInstallInfo)
+      .catch(() => setInstallInfo(undefined));
+  }, []);
 
   async function update(change: AppPreferenceChange) {
     setBusy(true);
@@ -77,6 +93,31 @@ export function SettingsPanel({
       window.location.reload();
     } catch {
       setMessage('无法打开使用引导。');
+    }
+  }
+
+  async function openFolder(target: 'install' | 'userData') {
+    try {
+      await window.desktopApi.openAppFolder(target);
+    } catch {
+      setMessage('无法打开目录，请手动从资源管理器访问。');
+    }
+  }
+
+  async function uninstall(clearData: boolean) {
+    setUninstalling(true);
+    try {
+      const status = await window.desktopApi.uninstallApp(clearData);
+      if (status === 'started') setMessage('卸载程序已启动，DeskPet 即将退出。');
+      else if (status === 'cancelled') setMessage('已取消卸载。');
+      else if (status === 'portable')
+        setMessage('免安装版没有系统卸载程序，请直接删除程序文件夹。');
+      else if (status === 'development') setMessage('当前为开发模式，不需要卸载；关闭窗口即可。');
+      else setMessage('卸载程序启动失败，请在 Windows“设置 → 应用”中卸载。');
+    } catch {
+      setMessage('卸载失败，请在 Windows“设置 → 应用”中卸载。');
+    } finally {
+      setUninstalling(false);
     }
   }
 
@@ -206,6 +247,71 @@ export function SettingsPanel({
             重置全部本地数据
           </button>
         </div>
+      </section>
+
+      <section className="content-card settings-section" aria-label="安装与卸载">
+        <div className="section-heading">
+          <div>
+            <span className="eyebrow">INSTALLATION</span>
+            <h2>安装与卸载</h2>
+          </div>
+          <span className="privacy-chip">
+            {installInfo ? INSTALL_KIND_LABELS[installInfo.kind] : '读取中'}
+          </span>
+        </div>
+        <div className="install-summary">
+          <div>
+            <strong>DeskPet {installInfo?.version ?? settings.appVersion}</strong>
+            <small>程序目录：{installInfo?.installPath ?? '读取中…'}</small>
+            <small>数据目录：{installInfo?.userDataPath ?? '读取中…'}</small>
+          </div>
+          <div className="data-actions">
+            <button
+              className="secondary-button"
+              disabled={!installInfo}
+              onClick={() => void openFolder('install')}
+            >
+              打开程序目录
+            </button>
+            <button
+              className="secondary-button"
+              disabled={!installInfo}
+              onClick={() => void openFolder('userData')}
+            >
+              打开数据目录
+            </button>
+          </div>
+        </div>
+        {installInfo?.kind === 'installed' && (
+          <div className="uninstall-actions">
+            <p>卸载程序；默认保留等级、装扮、便签和设置等本地数据，重新安装后可继续使用。</p>
+            <div className="actions">
+              <button
+                className="secondary-button"
+                disabled={uninstalling}
+                onClick={() => void uninstall(false)}
+              >
+                卸载 DeskPet
+              </button>
+              <button
+                className="danger-button"
+                disabled={uninstalling}
+                onClick={() => void uninstall(true)}
+              >
+                卸载并清除数据
+              </button>
+            </div>
+          </div>
+        )}
+        {installInfo?.kind === 'portable' && (
+          <p className="install-hint">
+            当前为免安装版：直接删除解压出来的程序文件夹即可完成卸载。用户数据保存在
+            “数据目录”，可在上面的“本地数据”中重置，或手动删除该目录。
+          </p>
+        )}
+        {installInfo?.kind === 'development' && (
+          <p className="install-hint">当前为开发模式，没有安装到系统，无需卸载。</p>
+        )}
       </section>
 
       <section className="content-card settings-section" aria-label="版本与素材许可">

@@ -6,6 +6,7 @@ import {
   ipcMain,
   Menu,
   nativeImage,
+  Notification,
   powerMonitor,
   screen,
   Tray,
@@ -28,6 +29,7 @@ const SIZE = { width: 180, height: 180 };
 let petWindow: BrowserWindow | undefined;
 let tray: Tray | undefined;
 let statisticsWindow: BrowserWindow | undefined;
+const noteWindows = new Map<number, BrowserWindow>();
 let statisticsStore: StatisticsStore | undefined;
 const pending: DailyStatistics[] = [];
 let quitting = false;
@@ -36,7 +38,7 @@ let alwaysOnTop = true;
 let ignoringMouse = true;
 let inputPreferences = { consentGiven: false, enabled: false };
 let systemSuspended = false;
-const inputMonitor = new InputMonitor((_counts, days) => {
+const inputMonitor = new InputMonitor((counts, days) => {
   pending.push(...days);
   try {
     persistPending();
@@ -46,6 +48,15 @@ const inputMonitor = new InputMonitor((_counts, days) => {
     setImmediate(() => {
       void setInputEnabled(false);
     });
+  }
+  try {
+    if (
+      counts.keyboardCount + counts.mouseCount > 0 &&
+      statisticsStore?.tools.isEnabled('sedentary')
+    )
+      statisticsStore.sedentary.recordActivity();
+  } catch (error) {
+    console.error('无法更新久坐活动状态。', error);
   }
   updateTray();
 });
@@ -217,6 +228,41 @@ function createStatisticsWindow(): void {
       query: { view: 'statistics' },
     });
 }
+function createNoteWindow(id: number): void {
+  const existing = noteWindows.get(id);
+  if (existing && !existing.isDestroyed()) {
+    existing.show();
+    existing.focus();
+    return;
+  }
+  const note = statisticsStore!.notes.get(id);
+  const window = new BrowserWindow({
+    width: 340,
+    height: 300,
+    minWidth: 260,
+    minHeight: 220,
+    title: 'DeskPet 便签',
+    alwaysOnTop: note.pinned,
+    show: false,
+    webPreferences: {
+      preload: path.join(__dirname, 'preload.cjs'),
+      contextIsolation: true,
+      nodeIntegration: false,
+      sandbox: true,
+    },
+  });
+  noteWindows.set(id, window);
+  window.on('closed', () => noteWindows.delete(id));
+  window.once('ready-to-show', () => window.show());
+  window.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
+  window.webContents.on('will-navigate', (event) => event.preventDefault());
+  const query = `?view=note&noteId=${id}`;
+  if (MAIN_WINDOW_VITE_DEV_SERVER_URL) void window.loadURL(MAIN_WINDOW_VITE_DEV_SERVER_URL + query);
+  else
+    void window.loadFile(path.join(__dirname, `../renderer/${MAIN_WINDOW_VITE_NAME}/index.html`), {
+      query: { view: 'note', noteId: String(id) },
+    });
+}
 function registerStatisticsIpc(): void {
   const verify = (event: Electron.IpcMainInvokeEvent, args: unknown[]) => {
     if (
@@ -227,6 +273,195 @@ function registerStatisticsIpc(): void {
     )
       throw new Error('无效的统计请求');
   };
+  const verifyPetRead = (event: Electron.IpcMainInvokeEvent, args: unknown[]) => {
+    if (
+      args.length !== 0 ||
+      ![petWindow?.webContents, statisticsWindow?.webContents].includes(event.sender) ||
+      event.senderFrame !== event.sender.mainFrame
+    )
+      throw new Error('无效的读取请求');
+  };
+  const verifyNote = (event: Electron.IpcMainInvokeEvent, id: unknown) => {
+    if (
+      typeof id !== 'number' ||
+      !Number.isSafeInteger(id) ||
+      id < 1 ||
+      noteWindows.get(id)?.webContents !== event.sender ||
+      event.senderFrame !== event.sender.mainFrame
+    )
+      throw new Error('无效的便签请求');
+  };
+  ipcMain.handle('dashboard:open', (event, ...args: unknown[]) => {
+    if (
+      args.length !== 0 ||
+      !petWindow ||
+      event.sender !== petWindow.webContents ||
+      event.senderFrame !== petWindow.webContents.mainFrame
+    )
+      throw new Error('无效的窗口请求');
+    createStatisticsWindow();
+  });
+  ipcMain.handle('notes:list', (event, ...args: unknown[]) => {
+    verify(event, args);
+    return statisticsStore!.notes.all();
+  });
+  ipcMain.handle('notes:get', (event, ...args: unknown[]) => {
+    if (args.length !== 1) throw new Error('无效便签请求');
+    verifyNote(event, args[0]);
+    return statisticsStore!.notes.get(args[0]);
+  });
+  ipcMain.handle('notes:create', (event, ...args: unknown[]) => {
+    verify(event, args);
+    if (!statisticsStore!.tools.isEnabled('notes')) throw new Error('便签已关闭');
+    return statisticsStore!.notes.create();
+  });
+  ipcMain.handle('notes:save', (event, ...args: unknown[]) => {
+    if (args.length !== 2) throw new Error('无效便签请求');
+    if (event.sender === statisticsWindow?.webContents) verify(event, []);
+    else verifyNote(event, args[0]);
+    if (!statisticsStore!.tools.isEnabled('notes')) throw new Error('便签已关闭');
+    const notes = statisticsStore!.notes.save(args[0], args[1]);
+    const note = notes.find((entry) => entry.id === args[0]);
+    if (note) noteWindows.get(note.id)?.setAlwaysOnTop(note.pinned);
+    return notes;
+  });
+  ipcMain.handle('notes:delete', (event, ...args: unknown[]) => {
+    if (args.length !== 1) throw new Error('无效便签请求');
+    verify(event, []);
+    if (!statisticsStore!.tools.isEnabled('notes')) throw new Error('便签已关闭');
+    const notes = statisticsStore!.notes.delete(args[0]);
+    const id = args[0] as number;
+    noteWindows.get(id)?.close();
+    return notes;
+  });
+  ipcMain.handle('notes:open', (event, ...args: unknown[]) => {
+    if (args.length !== 1) throw new Error('无效便签请求');
+    verify(event, []);
+    if (!statisticsStore!.tools.isEnabled('notes')) throw new Error('便签已关闭');
+    statisticsStore!.notes.get(args[0]);
+    createNoteWindow(args[0] as number);
+  });
+  const focusTick = () => {
+    if (statisticsStore?.completeFocusIfDue() && Notification.isSupported()) {
+      const focus = statisticsStore.focus.get();
+      new Notification({
+        title: 'DeskPet',
+        body: focus.kind === 'focus' ? '专注时间结束，休息一下吧。' : '休息时间结束。',
+        silent: !focus.soundEnabled,
+      }).show();
+    }
+  };
+  const sedentaryTick = () => {
+    if (
+      statisticsStore?.tools.isEnabled('sedentary') &&
+      statisticsStore.sedentary.checkDue() &&
+      Notification.isSupported()
+    )
+      new Notification({
+        title: 'DeskPet 久坐提醒',
+        body: '你已经工作一段时间啦，起来活动一下吧！',
+      }).show();
+  };
+  const focusService = () => {
+    focusTick();
+    return statisticsStore!.focus;
+  };
+  ipcMain.handle('focus:get', (event, ...args: unknown[]) => {
+    verifyPetRead(event, args);
+    return focusService().get();
+  });
+  ipcMain.handle('focus:start', (event, ...args: unknown[]) => {
+    if (args.length !== 2) throw new Error('无效计时请求');
+    verify(event, []);
+    if (!statisticsStore!.tools.isEnabled('focus')) throw new Error('番茄钟已关闭');
+    return focusService().start(args[0], args[1]);
+  });
+  ipcMain.handle('focus:pause', (event, ...args: unknown[]) => {
+    verify(event, args);
+    return focusService().pause();
+  });
+  ipcMain.handle('focus:resume', (event, ...args: unknown[]) => {
+    verify(event, args);
+    return focusService().resume();
+  });
+  ipcMain.handle('focus:stop', (event, ...args: unknown[]) => {
+    verify(event, args);
+    return focusService().stop();
+  });
+  ipcMain.handle('focus:sound', (event, ...args: unknown[]) => {
+    if (args.length !== 1) throw new Error('无效声音设置');
+    verify(event, []);
+    return focusService().setSoundEnabled(args[0]);
+  });
+  setInterval(focusTick, 1000).unref();
+  setInterval(sedentaryTick, 30_000).unref();
+  focusTick();
+  sedentaryTick();
+  ipcMain.handle('appearance:get', (event, ...args: unknown[]) => {
+    verifyPetRead(event, args);
+    return statisticsStore!.appearance.get();
+  });
+  ipcMain.handle('appearance:set', (event, ...args: unknown[]) => {
+    if (
+      !statisticsWindow ||
+      event.sender !== statisticsWindow.webContents ||
+      event.senderFrame !== statisticsWindow.webContents.mainFrame ||
+      args.length !== 1
+    )
+      throw new Error('无效的外观请求');
+    return statisticsStore!.appearance.update(args[0]);
+  });
+  ipcMain.handle('crafting:craft', (event, ...args: unknown[]) => {
+    if (
+      !statisticsWindow ||
+      event.sender !== statisticsWindow.webContents ||
+      event.senderFrame !== statisticsWindow.webContents.mainFrame ||
+      args.length !== 1
+    )
+      throw new Error('无效的合成请求');
+    statisticsStore!.crafting.craft(args[0]);
+    return statisticsStore!.appearance.get();
+  });
+  ipcMain.handle('tools:list', (event, ...args: unknown[]) => {
+    verify(event, args);
+    return statisticsStore!.tools.list();
+  });
+  ipcMain.handle('tools:set-enabled', (event, ...args: unknown[]) => {
+    if (args.length !== 2) throw new Error('无效工具设置');
+    verify(event, []);
+    const tools = statisticsStore!.tools.setEnabled(args[0], args[1]);
+    if (args[0] === 'focus' && args[1] === false) {
+      focusTick();
+      statisticsStore!.focus.stop();
+    }
+    if (args[0] === 'sedentary' && args[1] === false) statisticsStore!.sedentary.reset();
+    if (args[0] === 'notes' && args[1] === false)
+      for (const window of noteWindows.values()) window.close();
+    return tools;
+  });
+  ipcMain.handle('sedentary:get', (event, ...args: unknown[]) => {
+    verify(event, args);
+    return statisticsStore!.sedentary.get();
+  });
+  ipcMain.handle('sedentary:configure', (event, ...args: unknown[]) => {
+    if (args.length !== 1) throw new Error('无效久坐设置');
+    verify(event, []);
+    return statisticsStore!.sedentary.configure(args[0]);
+  });
+  ipcMain.handle('sedentary:snooze', (event, ...args: unknown[]) => {
+    if (args.length !== 1) throw new Error('无效延迟时间');
+    verify(event, []);
+    return statisticsStore!.sedentary.snooze(args[0]);
+  });
+  ipcMain.handle('sedentary:reset', (event, ...args: unknown[]) => {
+    verify(event, args);
+    return statisticsStore!.sedentary.reset();
+  });
+  ipcMain.handle('summary:get', (event, ...args: unknown[]) => {
+    verify(event, args);
+    flushStatistics();
+    return statisticsStore!.summary.get();
+  });
   ipcMain.handle('statistics:get', (event, ...args: unknown[]) => {
     verify(event, args);
     flushStatistics();
@@ -258,10 +493,13 @@ function registerStatisticsIpc(): void {
     if (!file) return false;
     const rows = statisticsStore!
       .all()
-      .map((row) => `${row.date},${row.keyboardCount},${row.mouseCount}`);
+      .map(
+        (row) =>
+          `${row.date},${row.keyboardCount},${row.mouseCount},${row.activeSeconds.toFixed(1)}`,
+      );
     fs.writeFileSync(
       file,
-      '\ufeffdate,keyboard_count,mouse_count\r\n' + rows.join('\r\n') + '\r\n',
+      '\ufeffdate,keyboard_count,mouse_count,active_seconds\r\n' + rows.join('\r\n') + '\r\n',
       'utf8',
     );
     return true;

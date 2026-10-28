@@ -18,8 +18,12 @@ describe('statistics persistence', () => {
       store.close();
       store = new StatisticsStore(file);
       const snapshot = store.snapshot(new Date(2026, 0, 2));
-      expect(snapshot.today).toEqual({ date: '2026-01-02', keyboardCount: 0, mouseCount: 1 });
-      expect(snapshot.total).toEqual({ keyboardCount: 1, mouseCount: 1 });
+      expect(snapshot.today).toMatchObject({
+        date: '2026-01-02',
+        keyboardCount: 0,
+        mouseCount: 1,
+      });
+      expect(snapshot.total).toMatchObject({ keyboardCount: 1, mouseCount: 1 });
       expect(snapshot.days).toHaveLength(30);
       store.clear();
       expect(store.all()).toEqual([]);

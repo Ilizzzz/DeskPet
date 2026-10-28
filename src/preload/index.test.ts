@@ -13,9 +13,32 @@ describe('preload bridge', () => {
     const api = exposeInMainWorld.mock.calls[0][1];
     expect(Object.keys(api).sort()).toEqual([
       'clearStatistics',
+      'configureSedentary',
+      'craftItem',
+      'createNote',
+      'deleteNote',
       'exportStatistics',
+      'getAppearance',
+      'getDailySummary',
+      'getFocus',
+      'getNote',
+      'getSedentary',
       'getStatistics',
+      'listNotes',
+      'listTools',
+      'openDashboard',
+      'openNote',
+      'pauseFocus',
       'platform',
+      'resetSedentary',
+      'resumeFocus',
+      'saveNote',
+      'setAppearance',
+      'setFocusSound',
+      'setToolEnabled',
+      'snoozeSedentary',
+      'startFocus',
+      'stopFocus',
     ]);
     api.getStatistics();
     api.clearStatistics();

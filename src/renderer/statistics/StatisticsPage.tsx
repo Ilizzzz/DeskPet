@@ -1,3 +1,6 @@
+import { AppearancePanel } from './AppearancePanel';
+import { InventoryPanel } from './InventoryPanel';
+import { ToolboxPanel } from './ToolboxPanel';
 import { useCallback, useEffect, useState } from 'react';
 import type { StatisticsSnapshot } from '../../shared/types/statistics';
 
@@ -37,6 +40,14 @@ export function StatisticsPage() {
       {error && <p role="alert">{error}</p>}
       {data && (
         <>
+          <section aria-label="成长">
+            <h2>等级 {data.growth.level}</h2>
+            <progress value={data.growth.experience} max={data.growth.nextLevelExperience} />
+            <p>
+              经验 {data.growth.experience} / {data.growth.nextLevelExperience} · 累计{' '}
+              {data.growth.totalExperience} · 今日 {data.todayExperience}
+            </p>
+          </section>
           <section className="cards" aria-label="今日统计">
             <div>
               今日键盘<strong>{data.today.keyboardCount}</strong>
@@ -47,10 +58,14 @@ export function StatisticsPage() {
             <div>
               今日总计<strong>{data.today.keyboardCount + data.today.mouseCount}</strong>
             </div>
+            <div>
+              今日活跃<strong>{Math.round(data.today.activeSeconds / 60)} 分钟</strong>
+            </div>
           </section>
           <p>
             累计：键盘 {data.total.keyboardCount} 次 · 鼠标 {data.total.mouseCount} 次 · 总计{' '}
-            {data.total.keyboardCount + data.total.mouseCount} 次
+            {data.total.keyboardCount + data.total.mouseCount} 次 · 活跃约{' '}
+            {Math.round(data.total.activeSeconds / 60)} 分钟
           </p>
           <h2>最近 {range} 天</h2>
           <div className="actions">
@@ -79,6 +94,9 @@ export function StatisticsPage() {
           </div>
         </>
       )}
+      <AppearancePanel />
+      <InventoryPanel />
+      <ToolboxPanel />
       <div className="actions">
         <button onClick={() => void action(() => window.desktopApi.exportStatistics())}>
           导出 CSV

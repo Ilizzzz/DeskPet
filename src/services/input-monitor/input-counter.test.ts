@@ -36,4 +36,9 @@ describe('InputCounter', () => {
     }
     expect(counter.flush(1000)).toMatchObject({ keyboardCount: 100, mouseCount: 100 });
   });
+  it('adds at most five active seconds to a persisted batch', () => {
+    const counter = new InputCounter(0);
+    counter.mouseDown(1000);
+    expect(counter.flushDays(5000).days[0].activeSeconds).toBe(5);
+  });
 });

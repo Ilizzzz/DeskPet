@@ -1,9 +1,16 @@
-import type { Appearance } from './appearance';
+export interface CraftingIngredient {
+  itemId: string;
+  quantity: number;
+}
 
 export interface CraftingRecipe {
   id: string;
   name: string;
-  ingredients: readonly { itemId: string; quantity: number }[];
+  description: string;
+  /** material 用于补充合成材料，outfit 用于合成高级装扮。 */
+  category: 'material' | 'outfit';
+  ingredients: readonly CraftingIngredient[];
   currencyCost: number;
-  output: { itemId: NonNullable<Appearance['head'] | Appearance['neck']>; quantity: number };
+  fragmentCost: number;
+  output: { itemId: string; quantity: number };
 }

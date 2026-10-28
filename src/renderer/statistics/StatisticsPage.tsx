@@ -1,7 +1,10 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { UI_ICONS } from '../../data/catalogs/appearance';
 import type { AppSettingsSnapshot } from '../../shared/types/settings';
 import type { StatisticsSnapshot } from '../../shared/types/statistics';
 import { AppearancePanel } from './AppearancePanel';
+import { loadAppearance } from './appearance-store';
+import { CatalogIcon } from './CatalogIcon';
 import { GrowthPanel } from './GrowthPanel';
 import { InventoryPanel } from './InventoryPanel';
 import { Onboarding } from './Onboarding';
@@ -11,27 +14,56 @@ import { ToolboxPanel } from './ToolboxPanel';
 
 type Page = 'home' | 'growth' | 'appearance' | 'tools' | 'settings';
 
-const pages: readonly { id: Page; label: string; icon: string }[] = [
-  { id: 'home', label: '首页', icon: '⌂' },
-  { id: 'growth', label: '成长', icon: '✦' },
-  { id: 'appearance', label: '外观', icon: '◇' },
-  { id: 'tools', label: '工具', icon: '◷' },
-  { id: 'settings', label: '设置', icon: '⚙' },
+const pages: readonly {
+  id: Page;
+  label: string;
+  icon: string;
+  title: string;
+  description: string;
+}[] = [
+  {
+    id: 'home',
+    label: '首页',
+    icon: UI_ICONS.home,
+    title: '今天也在慢慢长大',
+    description: '今日数据、成长进度和下一个解锁都在这里。',
+  },
+  {
+    id: 'growth',
+    label: '成长',
+    icon: UI_ICONS.growth,
+    title: '成长与解锁',
+    description: '等级经验、分类解锁路线、成就与每日签到。',
+  },
+  {
+    id: 'appearance',
+    label: '外观',
+    icon: UI_ICONS.appearance,
+    title: '外观与收藏',
+    description: '更换伙伴、场景和五槽位饰品，合成并收集全部装扮。',
+  },
+  {
+    id: 'tools',
+    label: '工具',
+    icon: UI_ICONS.tools,
+    title: '桌面工具箱',
+    description: '专注、记录和休息提醒，随等级逐步解锁。',
+  },
+  {
+    id: 'settings',
+    label: '设置',
+    icon: UI_ICONS.settings,
+    title: '设置与隐私',
+    description: '控制统计、动画、开机启动和本地数据，全部只在本机生效。',
+  },
 ];
-
-const pageCopy: Record<Page, { title: string; description: string }> = {
-  home: { title: '早上好，今天也一起加油', description: '查看今日活动与桌宠成长状态。' },
-  growth: { title: '成长记录', description: '了解经验来源、等级进度和解锁奖励。' },
-  appearance: { title: '外观与背包', description: '更换伙伴、场景和饰品，或合成新的收藏。' },
-  tools: { title: '桌面工具箱', description: '专注、记录和休息提醒，各自独立启停。' },
-  settings: { title: '设置与隐私', description: '控制统计、动画、开机启动和本地数据。' },
-};
 
 export function StatisticsPage() {
   const [page, setPage] = useState<Page>('home');
   const [data, setData] = useState<StatisticsSnapshot>();
   const [settings, setSettings] = useState<AppSettingsSnapshot>();
   const [error, setError] = useState('');
+  const lastLevel = useRef<number | undefined>(undefined);
 
   const refresh = useCallback(async () => {
     try {
@@ -39,6 +71,11 @@ export function StatisticsPage() {
         window.desktopApi.getStatistics(),
         window.desktopApi.getAppSettings(),
       ]);
+      // 升级会解锁新的角色/场景/装扮，外观页缓存需要同步刷新。
+      if (lastLevel.current !== undefined && statistics.growth.level !== lastLevel.current) {
+        void loadAppearance();
+      }
+      lastLevel.current = statistics.growth.level;
       setData(statistics);
       setSettings(appSettings);
       setError('');
@@ -60,12 +97,12 @@ export function StatisticsPage() {
     );
   }, [settings?.animationsEnabled]);
 
-  const copy = pageCopy[page];
+  const copy = pages.find((entry) => entry.id === page) ?? pages[0];
   return (
     <div className="dashboard-shell">
       <aside className="dashboard-sidebar">
         <div className="dashboard-brand">
-          <span className="brand-paw">●</span>
+          <CatalogIcon className="brand-paw" src={UI_ICONS.app} fallback={UI_ICONS.app} />
           <div>
             <strong>DeskPet</strong>
             <small>LOCAL COMPANION</small>
@@ -79,19 +116,19 @@ export function StatisticsPage() {
               aria-current={page === entry.id ? 'page' : undefined}
               onClick={() => setPage(entry.id)}
             >
-              <span>{entry.icon}</span>
+              <CatalogIcon src={entry.icon} fallback={UI_ICONS.app} />
               {entry.label}
             </button>
           ))}
         </nav>
         <div className="sidebar-privacy">
-          <span>✓</span>
+          <CatalogIcon src={UI_ICONS.checkin} fallback={UI_ICONS.app} alt="" />
           <div>
             <strong>本地优先</strong>
             <small>数据不会自动上传</small>
           </div>
         </div>
-        <small className="sidebar-version">v{settings?.appVersion ?? '1.0.0'}</small>
+        <small className="sidebar-version">v{settings?.appVersion ?? '1.1.0'}</small>
       </aside>
 
       <main className="dashboard-main">
@@ -104,7 +141,7 @@ export function StatisticsPage() {
             <span className={settings?.inputTracking.running ? 'state-dot active' : 'state-dot'} />
             {settings?.inputTracking.running ? '聚合统计中' : '统计已暂停'}
             <button className="refresh-button" aria-label="刷新数据" onClick={() => void refresh()}>
-              ↻
+              刷新数据
             </button>
           </div>
         </header>

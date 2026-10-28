@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { readPosition, restorePosition } from './window-position';
+import { readPosition, restorePosition, shiftForWindowResize } from './window-position';
 
 const areas = [
   { x: -1920, y: 0, width: 1920, height: 1040 },
@@ -20,5 +20,9 @@ describe('window position', () => {
   });
   it('uses the default position when the saved display is gone', () => {
     expect(restorePosition({ x: 3000, y: 0 }, areas, size)).toBeUndefined();
+  });
+  it('keeps the pet centered when the window size changes', () => {
+    expect(shiftForWindowResize({ x: 100, y: 100 }, 180, 220)).toEqual({ x: 120, y: 120 });
+    expect(shiftForWindowResize({ x: 100, y: 100 }, 220, 220)).toEqual({ x: 100, y: 100 });
   });
 });

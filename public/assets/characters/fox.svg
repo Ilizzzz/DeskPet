@@ -1,7 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-label="橙色小狐狸">
-  <path d="M14 51 9 8l42 32M114 51l5-43-42 32" fill="#d8834b" stroke="#694d45" stroke-width="6" stroke-linejoin="round"/>
-  <path d="M16 72c0-31 20-49 48-49s48 18 48 49v18c0 23-19 34-48 34S16 113 16 90Z" fill="#efaa70" stroke="#694d45" stroke-width="6"/>
-  <path d="M22 82c9 23 24 30 42 30s33-7 42-30c-14 5-25 2-42 18-17-16-28-13-42-18Z" fill="#fff1df"/>
-  <path d="M35 68c7-5 13-5 19 0M74 68c7-5 13-5 19 0" fill="none" stroke="#513c37" stroke-width="5" stroke-linecap="round"/>
-  <path d="m59 84 5 4 5-4M64 88c-2 7-9 8-13 4M64 88c2 7 9 8 13 4" fill="none" stroke="#513c37" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
-</svg>

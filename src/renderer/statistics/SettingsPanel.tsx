@@ -1,5 +1,7 @@
 import { useState } from 'react';
+import { UI_ICONS } from '../../data/catalogs/appearance';
 import type { AppPreferenceChange, AppSettingsSnapshot } from '../../shared/types/settings';
+import { CatalogIcon } from './CatalogIcon';
 
 export function SettingsPanel({
   settings,
@@ -92,7 +94,7 @@ export function SettingsPanel({
           <label className="setting-row">
             <span>
               <strong>桌宠动画</strong>
-              <small>关闭待机、互动和升级动态效果</small>
+              <small>关闭待机、专注和升级动态效果</small>
             </span>
             <input
               type="checkbox"
@@ -174,9 +176,34 @@ export function SettingsPanel({
         </div>
       </section>
 
+      <section className="content-card settings-section" aria-label="版本与素材许可">
+        <div className="section-heading">
+          <div>
+            <span className="eyebrow">ABOUT &amp; LICENSES</span>
+            <h2>版本与素材许可</h2>
+          </div>
+          <span className="privacy-chip">v{settings.appVersion}</span>
+        </div>
+        <div className="license-card">
+          <CatalogIcon src={UI_ICONS.app} fallback={UI_ICONS.app} alt="" />
+          <div>
+            <strong>DeskPet {settings.appVersion} · 成长与收藏</strong>
+            <p>
+              v1.1
+              新增等级解锁路线、每日签到、成就、合成工坊、五槽位饰品与四个新工具；输入与专注的经验不再封顶。
+            </p>
+            <p>
+              角色、装扮、场景与界面图标来自 Microsoft Fluent Emoji（MIT 许可证），已统一处理为透明
+              PNG；完整来源与许可文本见项目文档 docs/THIRD_PARTY_NOTICES.md 与
+              public/assets/licenses/。
+            </p>
+          </div>
+        </div>
+      </section>
+
       <section className="content-card about-card">
         <div>
-          <span className="brand-paw">●</span>
+          <CatalogIcon className="brand-paw" src={UI_ICONS.app} fallback={UI_ICONS.app} alt="" />
           <div>
             <strong>DeskPet {settings.appVersion}</strong>
             <small>本地优先 · 离线可用 · 无账号</small>

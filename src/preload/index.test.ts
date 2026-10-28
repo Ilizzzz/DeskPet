@@ -8,27 +8,47 @@ describe('preload bridge', () => {
     exposeInMainWorld.mockClear();
     invoke.mockClear();
   });
-  it('exposes only fixed statistics operations', async () => {
+  it('exposes only fixed desktop operations', async () => {
     await import('./index');
     const api = exposeInMainWorld.mock.calls[0][1];
     expect(Object.keys(api).sort()).toEqual([
+      'beginPetDrag',
+      'checkIn',
+      'claimAchievement',
       'clearStatistics',
       'configureSedentary',
+      'configureWater',
       'craftItem',
+      'createAnniversary',
+      'createCountdown',
       'createNote',
+      'createTodo',
+      'deleteAnniversary',
+      'deleteCountdown',
       'deleteNote',
+      'deleteTodo',
+      'dismantleItem',
+      'drinkWater',
+      'endPetDrag',
       'exportStatistics',
       'getAppSettings',
       'getAppearance',
+      'getCheckin',
       'getDailySummary',
       'getFocus',
       'getNote',
       'getSedentary',
       'getStatistics',
+      'getWater',
+      'listAchievements',
+      'listAnniversaries',
+      'listCountdowns',
       'listNotes',
+      'listTodos',
       'listTools',
       'openDashboard',
       'openNote',
+      'openPetMenu',
       'pauseFocus',
       'platform',
       'resetAllData',
@@ -43,6 +63,7 @@ describe('preload bridge', () => {
       'startFocus',
       'stopFocus',
       'updateAppPreference',
+      'updateTodo',
     ]);
     api.getStatistics();
     api.clearStatistics();

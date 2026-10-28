@@ -39,14 +39,27 @@ describe('growth database integration', () => {
       rmSync(dir, { recursive: true, force: true });
     }
   });
-  it('grants focus experience with a separate daily cap', () => {
+
+  it('awards every focus session without a daily cap', () => {
     const store = new StatisticsStore(':memory:');
     for (let session = 0; session < 6; session++) {
       const startedAt = session * 120_000;
       store.focus.start('focus', 1, startedAt);
       store.completeFocusIfDue(startedAt + 60_000);
     }
-    expect(store.growth()).toMatchObject({ experience: 50, totalExperience: 50 });
+    // 每天 2 枚星星币；每 3 次专注额外 1 枚星光碎片，6 次共 60 EXP。
+    expect(store.growth()).toMatchObject({ level: 1, experience: 60, totalExperience: 60 });
+    expect(store.appearance.get()).toMatchObject({ balance: 12, fragments: 2 });
+    store.close();
+  });
+
+  it('keeps input experience growing past the old daily cap', () => {
+    const store = new StatisticsStore(':memory:');
+    store.add({ date: '2026-01-03', keyboardCount: 25 * 1000, mouseCount: 0, activeSeconds: 60 });
+    expect(store.growth().totalExperience).toBe(1000);
+    expect(store.growth().level).toBe(6);
+    // 等级奖励 2/4/5 给星星币，3/5/6 给碎片：120 星星币 + 3 星光碎片。
+    expect(store.appearance.get()).toMatchObject({ balance: 120, fragments: 3 });
     store.close();
   });
 });

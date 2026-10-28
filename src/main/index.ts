@@ -14,7 +14,7 @@ import {
 import fs from 'node:fs';
 import path from 'node:path';
 import started from 'electron-squirrel-startup';
-import { readPosition, restorePosition } from './window-position';
+import { readPosition, restorePosition, shiftForWindowResize } from './window-position';
 import { TRAY_ICON } from './tray-icon';
 import { isInsidePet } from './pet-hit-test';
 import { InputMonitor } from '../services/input-monitor/input-monitor';
@@ -24,8 +24,12 @@ import {
   readInputPreferences,
   writeInputPreferences,
 } from '../services/input-monitor/input-preferences';
+import { PET_WINDOW_SIZE } from '../shared/constants/pet';
+import { registerFeatureIpc } from './ipc/features';
 
-const SIZE = { width: 180, height: 180 };
+const SIZE = { width: PET_WINDOW_SIZE, height: PET_WINDOW_SIZE };
+/** 旧版本窗口尺寸，用于把保存的位置换算成新窗口的中心点。 */
+const LEGACY_PET_WINDOW_SIZE = 180;
 let petWindow: BrowserWindow | undefined;
 let tray: Tray | undefined;
 let statisticsWindow: BrowserWindow | undefined;
@@ -38,6 +42,8 @@ let alwaysOnTop = true;
 let ignoringMouse = true;
 let inputPreferences = { consentGiven: false, enabled: false };
 let systemSuspended = false;
+let petDragging = false;
+let petDragTimer: NodeJS.Timeout | undefined;
 const inputMonitor = new InputMonitor((counts, days) => {
   pending.push(...days);
   try {
@@ -135,8 +141,19 @@ function positionPath(): string {
 }
 function loadPosition() {
   try {
+    const raw: unknown = JSON.parse(fs.readFileSync(positionPath(), 'utf8'));
+    let point = readPosition(raw);
+    // 旧版本窗口更小，按中心点对齐，避免升级后桌宠跳到别处。
+    if (point && typeof raw === 'object' && raw !== null) {
+      const savedSize = (raw as { size?: unknown }).size;
+      point = shiftForWindowResize(
+        point,
+        typeof savedSize === 'number' ? savedSize : LEGACY_PET_WINDOW_SIZE,
+        PET_WINDOW_SIZE,
+      );
+    }
     return restorePosition(
-      readPosition(JSON.parse(fs.readFileSync(positionPath(), 'utf8'))),
+      point,
       screen.getAllDisplays().map((d) => d.workArea),
       SIZE,
     );
@@ -149,10 +166,84 @@ function loadPosition() {
 function savePosition(window: BrowserWindow): void {
   try {
     const [x, y] = window.getPosition();
-    fs.writeFileSync(positionPath(), JSON.stringify({ x, y }), 'utf8');
+    fs.writeFileSync(positionPath(), JSON.stringify({ x, y, size: PET_WINDOW_SIZE }), 'utf8');
   } catch (error) {
     console.error('无法保存桌宠位置。', error);
   }
+}
+
+/**
+ * 桌宠拖动不再使用窗口原生的 -webkit-app-region，改为主进程跟随光标移动窗口。
+ *
+ * 原因是原生拖动区域会吞掉鼠标事件，导致拖动与点击/双击互相抢状态；
+ * 由主进程统一跟踪也能保证拖动过程中不会触发点击穿透。
+ */
+function beginPetDrag(): void {
+  if (!petWindow || petWindow.isDestroyed() || petDragging) return;
+  petDragging = true;
+  petWindow.setIgnoreMouseEvents(false);
+  ignoringMouse = false;
+  const cursor = screen.getCursorScreenPoint();
+  const [windowX, windowY] = petWindow.getPosition();
+  const offsetX = cursor.x - windowX;
+  const offsetY = cursor.y - windowY;
+  if (petDragTimer) clearInterval(petDragTimer);
+  petDragTimer = setInterval(() => {
+    if (!petWindow || petWindow.isDestroyed()) return;
+    const point = screen.getCursorScreenPoint();
+    petWindow.setPosition(Math.round(point.x - offsetX), Math.round(point.y - offsetY));
+  }, 8);
+}
+function endPetDrag(): void {
+  if (!petDragging) return;
+  petDragging = false;
+  if (petDragTimer) {
+    clearInterval(petDragTimer);
+    petDragTimer = undefined;
+  }
+  if (petWindow && !petWindow.isDestroyed()) savePosition(petWindow);
+}
+
+function petMenuItems(): Electron.MenuItemConstructorOptions[] {
+  return [
+    { label: '打开控制中心', click: () => createStatisticsWindow() },
+    { label: '显示桌宠', click: () => petWindow?.show() },
+    { label: '隐藏桌宠', click: () => petWindow?.hide() },
+    { type: 'separator' },
+    {
+      label: inputPreferences.enabled ? '暂停键鼠统计' : '启用键鼠统计',
+      click: () => {
+        void setInputEnabled(!inputPreferences.enabled);
+      },
+    },
+    {
+      label: '窗口置顶',
+      type: 'checkbox',
+      checked: alwaysOnTop,
+      click: (item) => {
+        alwaysOnTop = item.checked;
+        petWindow?.setAlwaysOnTop(alwaysOnTop);
+      },
+    },
+    {
+      label: '完全点击穿透',
+      type: 'checkbox',
+      checked: clickThrough,
+      click: (item) => {
+        clickThrough = item.checked;
+        petWindow?.setIgnoreMouseEvents(true, { forward: true });
+        ignoringMouse = true;
+      },
+    },
+    { type: 'separator' },
+    {
+      label: '退出 DeskPet',
+      click: () => {
+        quitting = true;
+        app.quit();
+      },
+    },
+  ];
 }
 function updateTray(): void {
   const status = inputMonitor.isRunning ? '统计中' : '已暂停';
@@ -323,6 +414,27 @@ function registerStatisticsIpc(): void {
     )
       throw new Error('无效的窗口请求');
     createStatisticsWindow();
+  });
+  const verifyPet = (event: Electron.IpcMainInvokeEvent, args: unknown[]) => {
+    if (
+      args.length !== 0 ||
+      !petWindow ||
+      event.sender !== petWindow.webContents ||
+      event.senderFrame !== petWindow.webContents.mainFrame
+    )
+      throw new Error('无效的桌宠请求');
+  };
+  ipcMain.handle('pet:drag-start', (event, ...args: unknown[]) => {
+    verifyPet(event, args);
+    beginPetDrag();
+  });
+  ipcMain.handle('pet:drag-end', (event, ...args: unknown[]) => {
+    verifyPet(event, args);
+    endPetDrag();
+  });
+  ipcMain.handle('pet:menu', (event, ...args: unknown[]) => {
+    verifyPet(event, args);
+    if (petWindow) Menu.buildFromTemplate(petMenuItems()).popup({ window: petWindow });
   });
   ipcMain.handle('notes:list', (event, ...args: unknown[]) => {
     verify(event, args);
@@ -605,7 +717,7 @@ function createWindow(): void {
   petWindow = window;
   window.setIgnoreMouseEvents(true, { forward: true });
   setInterval(() => {
-    if (window.isDestroyed()) return;
+    if (window.isDestroyed() || petDragging) return;
     const shouldIgnore =
       clickThrough ||
       !window.isVisible() ||
@@ -615,7 +727,10 @@ function createWindow(): void {
       ignoringMouse = shouldIgnore;
     }
   }, 60).unref();
-  window.on('moved', () => savePosition(window));
+  // 拖动过程中窗口每 8ms 移动一次，只在拖动结束后写位置文件，避免频繁磁盘写入。
+  window.on('moved', () => {
+    if (!petDragging) savePosition(window);
+  });
   window.on('close', (event) => {
     if (!quitting) {
       event.preventDefault();
@@ -663,6 +778,17 @@ else {
       return;
     }
     registerStatisticsIpc();
+    registerFeatureIpc({
+      store: () => {
+        if (!statisticsStore) throw new Error('统计数据库不可用');
+        return statisticsStore;
+      },
+      dashboard: () => statisticsWindow,
+      pet: () => petWindow,
+      notify: (title, body) => {
+        if (Notification.isSupported()) new Notification({ title, body }).show();
+      },
+    });
     inputPreferences = readInputPreferences(inputPreferencesPath());
     try {
       applyLaunchAtLogin(statisticsStore.preferences.get().launchAtLogin);
@@ -705,6 +831,7 @@ else {
   });
 }
 app.on('before-quit', () => {
+  if (petDragTimer) clearInterval(petDragTimer);
   inputMonitor.stop();
   try {
     if (statisticsStore) {

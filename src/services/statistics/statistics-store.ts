@@ -1,3 +1,4 @@
+import { DatabaseSync } from 'node:sqlite';
 import { NotesService } from '../../tools/notes/notes-service';
 import { FocusService } from '../../tools/focus/focus-service';
 import { AppearanceService } from '../../features/appearance/appearance-service';
@@ -6,7 +7,14 @@ import { ToolRegistryService } from '../../tools/tool-registry';
 import { SedentaryService } from '../../tools/sedentary/sedentary-service';
 import { SummaryService } from '../../tools/summary/summary-service';
 import { AppPreferencesService } from '../settings/app-preferences-service';
-import { grantLevelReward } from '../rewards/rewards';
+import { CheckinService } from '../../features/checkin/checkin-service';
+import { AchievementService } from '../../features/achievements/achievement-service';
+import { TodoService } from '../../tools/todo/todo-service';
+import { CountdownService } from '../../tools/countdown/countdown-service';
+import { AnniversaryService } from '../../tools/anniversary/anniversary-service';
+import { WaterService } from '../../tools/water/water-service';
+import { grantLevelReward, grantReward } from '../rewards/rewards';
+import { UNLOCKS } from '../../data/catalogs/unlocks';
 import {
   LEVEL_REWARDS,
   GROWTH_RULES,
@@ -16,12 +24,14 @@ import {
   type GrowthState,
   type GrowthSnapshot,
 } from '../../features/growth/growth';
-import { DatabaseSync } from 'node:sqlite';
 import {
   localDate,
   type DailyStatistics,
   type StatisticsSnapshot,
 } from '../../shared/types/statistics';
+
+/** 当前数据库结构版本；升级时必须追加迁移而不重建用户数据库。 */
+const SCHEMA_VERSION = 15;
 
 export class StatisticsStore {
   private readonly db: DatabaseSync;
@@ -30,7 +40,7 @@ export class StatisticsStore {
     this.db.exec('PRAGMA journal_mode = WAL; PRAGMA busy_timeout = 5000;');
     const version = (this.db.prepare('PRAGMA user_version').get() as { user_version: number })
       .user_version;
-    if (version > 14) throw new Error('统计数据库版本高于当前应用支持的版本');
+    if (version > SCHEMA_VERSION) throw new Error('统计数据库版本高于当前应用支持的版本');
     if (version === 0)
       this.db.exec(`BEGIN; CREATE TABLE daily_statistics (
       date TEXT PRIMARY KEY, keyboard_count INTEGER NOT NULL CHECK(keyboard_count >= 0),
@@ -119,7 +129,63 @@ export class StatisticsStore {
         INSERT INTO app_preferences VALUES (1, 1, 0, 0);
         PRAGMA user_version = 14; COMMIT;`,
       );
+    if (version < 15) this.migrateAppearanceAndFeatures();
+    this.initializeProgression();
   }
+
+  /**
+   * 15 版：补全五槽位外观、碎片货币、签到/成就/新工具表，并把旧素材 ID 迁移到新目录。
+   *
+   * 旧版本只有 hat_blue/hat_star/scarf 三件装扮和 fox 角色，用户数据必须无损迁移。
+   */
+  private migrateAppearanceAndFeatures(): void {
+    this.db.exec(`BEGIN;
+      ALTER TABLE wallet ADD COLUMN fragments INTEGER NOT NULL DEFAULT 0 CHECK(fragments >= 0);
+      ALTER TABLE appearance ADD COLUMN face TEXT;
+      ALTER TABLE appearance ADD COLUMN hand TEXT;
+      ALTER TABLE appearance ADD COLUMN back TEXT;
+      CREATE TABLE granted_unlocks (id TEXT PRIMARY KEY, granted_at INTEGER NOT NULL);
+      CREATE TABLE checkins (date TEXT PRIMARY KEY, streak INTEGER NOT NULL, reward TEXT NOT NULL, created_at INTEGER NOT NULL);
+      CREATE TABLE achievements (id TEXT PRIMARY KEY, claimed_at INTEGER NOT NULL);
+      CREATE TABLE todos (id INTEGER PRIMARY KEY, content TEXT NOT NULL, done INTEGER NOT NULL DEFAULT 0 CHECK(done IN (0, 1)), created_at INTEGER NOT NULL, updated_at INTEGER NOT NULL);
+      CREATE TABLE countdowns (id INTEGER PRIMARY KEY, label TEXT NOT NULL, ends_at INTEGER NOT NULL, created_at INTEGER NOT NULL, notified INTEGER NOT NULL DEFAULT 0 CHECK(notified IN (0, 1)));
+      CREATE TABLE anniversaries (id INTEGER PRIMARY KEY, title TEXT NOT NULL, date TEXT NOT NULL, repeat_yearly INTEGER NOT NULL DEFAULT 1 CHECK(repeat_yearly IN (0, 1)), created_at INTEGER NOT NULL);
+      CREATE TABLE water_state (id INTEGER PRIMARY KEY CHECK(id = 1), interval_minutes INTEGER NOT NULL, daily_goal INTEGER NOT NULL, date TEXT NOT NULL, cups_today INTEGER NOT NULL, last_drink_at INTEGER, last_reminded_at INTEGER);
+      INSERT INTO water_state VALUES (1, 60, 8, '', 0, NULL, NULL);
+      -- 角色 fox 替换为同色系的老虎，保留已有解锁。
+      INSERT OR IGNORE INTO unlocks(id) SELECT 'tiger' FROM unlocks WHERE id = 'fox';
+      DELETE FROM unlocks WHERE id = 'fox';
+      UPDATE appearance SET character = 'tiger' WHERE character = 'fox';
+      -- 三件旧装扮改为新目录 ID，避免背包出现未知物品。
+      INSERT OR IGNORE INTO inventory(item_id, quantity) VALUES ('cap_blue', 0);
+      UPDATE inventory SET quantity = quantity + (SELECT COALESCE(SUM(quantity), 0) FROM inventory WHERE item_id = 'hat_blue') WHERE item_id = 'cap_blue';
+      DELETE FROM inventory WHERE item_id = 'hat_blue';
+      INSERT OR IGNORE INTO inventory(item_id, quantity) VALUES ('hat_top', 0);
+      UPDATE inventory SET quantity = quantity + (SELECT COALESCE(SUM(quantity), 0) FROM inventory WHERE item_id = 'hat_star') WHERE item_id = 'hat_top';
+      DELETE FROM inventory WHERE item_id = 'hat_star';
+      INSERT OR IGNORE INTO inventory(item_id, quantity) VALUES ('scarf_red', 0);
+      UPDATE inventory SET quantity = quantity + (SELECT COALESCE(SUM(quantity), 0) FROM inventory WHERE item_id = 'scarf') WHERE item_id = 'scarf_red';
+      DELETE FROM inventory WHERE item_id = 'scarf';
+      UPDATE appearance SET head = 'cap_blue' WHERE head = 'hat_blue';
+      UPDATE appearance SET head = 'hat_top' WHERE head = 'hat_star';
+      UPDATE appearance SET neck = 'scarf_red' WHERE neck = 'scarf';
+      PRAGMA user_version = 15;
+    COMMIT;`);
+  }
+
+  /** 老用户升级后按当前等级补发所有应解锁内容；granted_unlocks 保证只发一次。 */
+  private initializeProgression(): void {
+    const state = this.growth();
+    this.db.exec('BEGIN IMMEDIATE');
+    try {
+      this.grantUnlocksUpTo(state.level);
+      this.db.exec('COMMIT');
+    } catch (error) {
+      this.db.exec('ROLLBACK');
+      throw error;
+    }
+  }
+
   get notes(): NotesService {
     return new NotesService(this.db);
   }
@@ -144,6 +210,24 @@ export class StatisticsStore {
   get preferences(): AppPreferencesService {
     return new AppPreferencesService(this.db);
   }
+  get checkin(): CheckinService {
+    return new CheckinService(this.db);
+  }
+  get achievements(): AchievementService {
+    return new AchievementService(this.db);
+  }
+  get todos(): TodoService {
+    return new TodoService(this.db);
+  }
+  get countdowns(): CountdownService {
+    return new CountdownService(this.db);
+  }
+  get anniversaries(): AnniversaryService {
+    return new AnniversaryService(this.db);
+  }
+  get water(): WaterService {
+    return new WaterService(this.db);
+  }
   growth(): GrowthSnapshot {
     const state = this.db
       .prepare(
@@ -165,36 +249,60 @@ export class StatisticsStore {
         state.mouseRemainder,
       );
   }
-  private grantRewards(levels: number[], date: string): void {
+  private grantLevelRewards(levels: number[], date: string): void {
     for (const level of levels) {
-      const reward = LEVEL_REWARDS[level];
-      if (!reward) continue;
+      const rewards = LEVEL_REWARDS[level];
+      if (!rewards?.length) continue;
+      const serialized = JSON.stringify(rewards);
+      const inserted = this.db
+        .prepare('INSERT OR IGNORE INTO granted_rewards(level, reward) VALUES (?, ?)')
+        .run(level, serialized);
+      if (inserted.changes === 0) continue;
+      for (const reward of rewards) grantReward(this.db, reward);
       this.db
-        .prepare('INSERT OR IGNORE INTO level_rewards(level, reward) VALUES (?, ?)')
-        .run(level, reward);
-      grantLevelReward(this.db, level, reward, date);
+        .prepare('INSERT OR IGNORE INTO reward_events(level, reward, date) VALUES (?, ?, ?)')
+        .run(level, serialized, date);
+    }
+  }
+  /**
+   * 等级到达后自动把角色、场景和装扮放进用户账户。
+   *
+   * 工具不需要发放实物，由 ToolRegistryService 按等级实时判断是否可用。
+   */
+  private grantUnlocksUpTo(level: number): void {
+    for (const entry of UNLOCKS) {
+      if (entry.level > level) continue;
+      const inserted = this.db
+        .prepare('INSERT OR IGNORE INTO granted_unlocks(id, granted_at) VALUES (?, ?)')
+        .run(entry.id, Date.now());
+      if (inserted.changes === 0) continue;
+      if (entry.category === 'item')
+        grantReward(this.db, { type: 'item', itemId: entry.id, quantity: 1 });
+      else if (entry.category === 'character')
+        grantReward(this.db, { type: 'character', id: entry.id });
+      else if (entry.category === 'scene') grantReward(this.db, { type: 'scene', id: entry.id });
     }
   }
   private awardFocusExperience(date: string): void {
-    const daily = this.db
-      .prepare('SELECT focus_experience AS focusExperience FROM growth_daily WHERE date = ?')
-      .get(date) as { focusExperience: number } | undefined;
-    const awarded = Math.min(
-      GROWTH_RULES.focusSessionExp,
-      Math.max(0, GROWTH_RULES.dailyFocusExpCap - (daily?.focusExperience ?? 0)),
-    );
-    if (awarded === 0) return;
-    const result = settleExperience(this.growth(), awarded);
+    const result = settleExperience(this.growth(), GROWTH_RULES.focusSessionExp);
     this.saveGrowth(result.state);
     this.db
       .prepare(
         'INSERT INTO growth_daily(date, experience, focus_experience) VALUES (?, 0, ?) ON CONFLICT(date) DO UPDATE SET focus_experience = focus_experience + excluded.focus_experience',
       )
-      .run(date, awarded);
+      .run(date, GROWTH_RULES.focusSessionExp);
     this.db
       .prepare('INSERT INTO growth_transactions(date, experience) VALUES (?, ?)')
-      .run(date, awarded);
-    this.grantRewards(result.levels, date);
+      .run(date, GROWTH_RULES.focusSessionExp);
+    this.grantLevelRewards(result.levels, date);
+    this.grantUnlocksUpTo(result.state.level);
+    // 专注本身也给星星币，每 3 次额外奖励 1 枚碎片，保证合成材料有稳定来源。
+    grantReward(this.db, { type: 'coins', amount: GROWTH_RULES.starsPerFocus });
+    const sessions = this.db.prepare('SELECT COUNT(*) AS count FROM focus_sessions').get() as {
+      count: number;
+    };
+    if (sessions.count % GROWTH_RULES.focusSessionsPerFragment === 0)
+      grantReward(this.db, { type: 'fragments', amount: 1 });
   }
   completeFocusIfDue(now = Date.now()): boolean {
     return this.focus.completeIfDue(now, (date) => this.awardFocusExperience(date));
@@ -219,15 +327,7 @@ export class StatisticsStore {
       active_seconds = active_seconds + excluded.active_seconds`,
         )
         .run(batch.date, batch.keyboardCount, batch.mouseCount, batch.activeSeconds);
-      const daily = this.db
-        .prepare('SELECT experience FROM growth_daily WHERE date = ?')
-        .get(batch.date) as { experience: number } | undefined;
-      const result = settleInput(
-        this.growth(),
-        batch.keyboardCount,
-        batch.mouseCount,
-        daily?.experience ?? 0,
-      );
+      const result = settleInput(this.growth(), batch.keyboardCount, batch.mouseCount);
       this.saveGrowth(result.state);
       if (result.awarded) {
         this.db
@@ -239,7 +339,8 @@ export class StatisticsStore {
           .prepare('INSERT INTO growth_transactions(date, experience) VALUES (?, ?)')
           .run(batch.date, result.awarded);
       }
-      this.grantRewards(result.levels, batch.date);
+      this.grantLevelRewards(result.levels, batch.date);
+      this.grantUnlocksUpTo(result.state.level);
       this.db.exec('COMMIT');
     } catch (error) {
       this.db.exec('ROLLBACK');
@@ -294,18 +395,25 @@ export class StatisticsStore {
         DELETE FROM level_rewards;
         DELETE FROM reward_events;
         DELETE FROM granted_rewards;
+        DELETE FROM granted_unlocks;
         DELETE FROM inventory;
         DELETE FROM unlocks;
         DELETE FROM crafting_transactions;
         DELETE FROM focus_sessions;
         DELETE FROM notes;
         DELETE FROM tool_settings;
+        DELETE FROM checkins;
+        DELETE FROM achievements;
+        DELETE FROM todos;
+        DELETE FROM countdowns;
+        DELETE FROM anniversaries;
         UPDATE growth_state SET level = 1, experience = 0, total_experience = 0, keyboard_remainder = 0, mouse_remainder = 0 WHERE id = 1;
-        UPDATE wallet SET balance = 0 WHERE id = 1;
-        UPDATE appearance SET character = 'cat', scene = 'transparent', head = NULL, neck = NULL WHERE id = 1;
+        UPDATE wallet SET balance = 0, fragments = 0 WHERE id = 1;
+        UPDATE appearance SET character = 'cat', scene = 'transparent', head = NULL, neck = NULL, face = NULL, hand = NULL, back = NULL WHERE id = 1;
         UPDATE focus_timer SET status = 'idle', kind = 'focus', duration_ms = 1500000, remaining_ms = 0, deadline = NULL, completed_sessions = 0, focus_ms = 0 WHERE id = 1;
         UPDATE focus_preferences SET sound_enabled = 1 WHERE id = 1;
         UPDATE sedentary_state SET interval_minutes = 60, inactivity_reset_minutes = 5, quiet_start = NULL, quiet_end = NULL, last_activity_at = NULL, active_since = NULL, last_reminded_at = NULL, snoozed_until = NULL WHERE id = 1;
+        UPDATE water_state SET interval_minutes = 60, daily_goal = 8, date = '', cups_today = 0, last_drink_at = NULL, last_reminded_at = NULL WHERE id = 1;
         UPDATE app_preferences SET animations_enabled = 1, onboarding_completed = 0, launch_at_login = 0 WHERE id = 1;
       `);
       this.db.exec('COMMIT');
@@ -313,6 +421,7 @@ export class StatisticsStore {
       this.db.exec('ROLLBACK');
       throw error;
     }
+    this.initializeProgression();
   }
   close(): void {
     this.db.close();

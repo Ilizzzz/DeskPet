@@ -28,7 +28,7 @@ describe('daily summary', () => {
       experience: 210,
       level: 3,
       focusMinutes: 1,
-      rewards: ['currency_50'],
+      rewards: ['1 星光碎片'],
     });
     store.close();
   });

@@ -52,7 +52,9 @@ describe('statistics persistence', () => {
       character: 'cat',
       scene: 'transparent',
       balance: 0,
+      fragments: 0,
       inventory: [],
+      equipped: { head: null, neck: null, face: null, hand: null, back: null },
     });
     expect(store.preferences.get()).toEqual({
       animationsEnabled: true,

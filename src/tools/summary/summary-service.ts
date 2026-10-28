@@ -1,6 +1,30 @@
 import type { DatabaseSync } from 'node:sqlite';
 import { localDate } from '../../shared/types/statistics';
 import type { DailySummary } from '../../shared/types/summary';
+import { describeReward, type RewardSpec } from '../../shared/types/reward';
+
+const REWARD_TYPES = new Set(['coins', 'fragments', 'item', 'character', 'scene']);
+
+function isRewardSpec(value: unknown): value is RewardSpec {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return false;
+  const type = (value as { type?: unknown }).type;
+  return typeof type === 'string' && REWARD_TYPES.has(type);
+}
+
+/**
+ * v15 起等级奖励以 RewardSpec 数组的 JSON 存储；旧版本记录的是字符串，
+ * 无法解析时原样展示，避免历史数据看不懂。
+ */
+function describeRewardEntry(value: string): string {
+  try {
+    const parsed: unknown = JSON.parse(value);
+    if (Array.isArray(parsed) && parsed.length > 0 && parsed.every(isRewardSpec))
+      return parsed.map(describeReward).join('、');
+  } catch {
+    // 旧数据不是 JSON，按原始奖励名显示。
+  }
+  return value;
+}
 
 export class SummaryService {
   constructor(private readonly db: DatabaseSync) {}
@@ -37,7 +61,7 @@ export class SummaryService {
       experience: dailyGrowth?.experience ?? 0,
       level: growth.level,
       focusMinutes: Math.round(focus.duration / 60_000),
-      rewards: rewards.map((entry) => entry.reward),
+      rewards: rewards.map((entry) => describeRewardEntry(entry.reward)),
     };
   }
 }

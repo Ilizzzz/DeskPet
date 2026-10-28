@@ -1,0 +1,216 @@
+/*
+ * 桌宠悬浮窗样式：220×220 透明窗口，所有坐标以舞台左上角为基准。
+ * 类名统一使用 companion- 前缀，避免与设置页/旧版桌宠样式互相覆盖。
+ * 层级约定：场景背景 0 → 背景装饰 1 → 角色 2 → 饰品 3 → 前景装饰 4 → 台词气泡 6。
+ */
+.companion-stage {
+  position: relative;
+  display: block;
+  overflow: hidden;
+  background: transparent;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: none;
+}
+
+/*
+ * 交互层铺满整个舞台，由主进程命中测试决定真正可点击的中心区域。
+ * 角色与饰品都放在这一层内，随拖动和待机动画一起移动。
+ */
+.companion-root {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 2;
+  cursor: grab;
+  transform-origin: 50% 92%;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: none;
+}
+
+.companion-root:active {
+  cursor: grabbing;
+}
+
+.companion-scene-background,
+.companion-scene-decoration {
+  position: absolute;
+  pointer-events: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.companion-scene-background {
+  inset: 0;
+  z-index: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.companion-scene-decoration {
+  height: auto;
+  transform-origin: center;
+}
+
+/* 可选地面色带，与外观预览的 PetPreview 使用同一比例。 */
+.companion-scene-ground {
+  position: absolute;
+  z-index: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  height: 34%;
+  pointer-events: none;
+}
+
+.companion-character,
+.companion-fallback {
+  position: absolute;
+  right: auto;
+  bottom: auto;
+  z-index: 2;
+  pointer-events: none;
+  user-select: none;
+  -webkit-user-select: none;
+  object-fit: contain;
+}
+
+.companion-fallback {
+  display: grid;
+  place-items: center;
+  font-size: 96px;
+  line-height: 1;
+  filter: drop-shadow(0 8px 10px rgb(70 47 35 / 20%));
+}
+
+.companion-item {
+  position: absolute;
+  right: auto;
+  bottom: auto;
+  z-index: 3;
+  height: auto;
+  pointer-events: none;
+  user-select: none;
+  -webkit-user-select: none;
+  transform-origin: center;
+  filter: drop-shadow(0 2px 3px rgb(70 47 35 / 16%));
+}
+
+/* 台词气泡：5 秒后由 App 移除，pointer-events 关闭避免挡住拖动。 */
+.companion-speech {
+  position: absolute;
+  z-index: 6;
+  top: 6px;
+  left: 50%;
+  max-width: 196px;
+  padding: 7px 11px;
+  border: 1px solid rgb(234 223 215 / 90%);
+  border-radius: 12px;
+  color: #3f342f;
+  background: rgb(255 253 251 / 96%);
+  box-shadow: 0 6px 16px rgb(92 62 45 / 18%);
+  font-size: 12px;
+  line-height: 1.45;
+  text-align: center;
+  pointer-events: none;
+  transform: translateX(-50%);
+  animation: companion-speech-in 180ms ease-out;
+}
+
+.companion-speech::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  bottom: -5px;
+  width: 9px;
+  height: 9px;
+  border-right: 1px solid rgb(234 223 215 / 90%);
+  border-bottom: 1px solid rgb(234 223 215 / 90%);
+  background: rgb(255 253 251 / 96%);
+  transform: translateX(-50%) rotate(45deg);
+}
+
+/* 被动状态表现：不做任何点击/摸头动画，点击只显示台词。 */
+.companion-state-idle {
+  animation: companion-breathe 2.8s ease-in-out infinite;
+}
+
+.companion-state-focus {
+  animation: companion-focus 2s ease-in-out infinite;
+}
+
+.companion-state-rest {
+  animation: companion-rest 1.8s ease-in-out;
+}
+
+.companion-state-sleep {
+  animation: companion-sleep 2.8s ease-in-out infinite;
+}
+
+.companion-state-levelup {
+  animation: companion-level-up 0.6s ease-in-out 5;
+}
+
+.companion-state-dragging {
+  animation: none;
+  transform: rotate(-3deg) scale(0.98);
+}
+
+/* 设置中关闭动画后，桌宠与气泡完全静止。 */
+.companion-stage.motion-disabled .companion-root,
+.companion-stage.motion-disabled .companion-speech {
+  animation: none !important;
+}
+
+@keyframes companion-breathe {
+  50% {
+    transform: translateY(-3px) scale(1.02);
+  }
+}
+
+@keyframes companion-focus {
+  50% {
+    transform: translateY(-2px);
+    filter: drop-shadow(0 4px 6px rgb(85 111 145 / 35%));
+  }
+}
+
+@keyframes companion-rest {
+  50% {
+    transform: rotate(3deg) translateY(2px);
+  }
+}
+
+@keyframes companion-sleep {
+  50% {
+    transform: translateY(3px) scaleY(0.96);
+    opacity: 0.9;
+  }
+}
+
+@keyframes companion-level-up {
+  50% {
+    transform: translateY(-10px);
+    filter: drop-shadow(0 0 12px #f9d24c);
+  }
+}
+
+@keyframes companion-speech-in {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .companion-root,
+  .companion-speech {
+    animation: none !important;
+  }
+}

@@ -9,13 +9,16 @@ export function SedentaryPanel() {
   const [quietEnd, setQuietEnd] = useState('');
   const [message, setMessage] = useState('');
   useEffect(() => {
-    void window.desktopApi.getSedentary().then((value) => {
-      setState(value);
-      setIntervalMinutes(value.intervalMinutes);
-      setResetMinutes(value.inactivityResetMinutes);
-      setQuietStart(value.quietStart ?? '');
-      setQuietEnd(value.quietEnd ?? '');
-    });
+    void window.desktopApi
+      .getSedentary()
+      .then((value) => {
+        setState(value);
+        setIntervalMinutes(value.intervalMinutes);
+        setResetMinutes(value.inactivityResetMinutes);
+        setQuietStart(value.quietStart ?? '');
+        setQuietEnd(value.quietEnd ?? '');
+      })
+      .catch(() => setMessage('无法读取久坐设置。'));
   }, []);
   async function save() {
     try {

@@ -26,20 +26,24 @@ export function settleExperience(
     levels,
   };
 }
+/**
+ * 键鼠输入结算。
+ *
+ * v1.1 删除了每日经验上限：超过整单位的部分会继续换经验，只有不足 1 EXP 的
+ * 余数按设备独立保留，跨批次累积，保证小批量输入不会被丢弃。
+ */
 export function settleInput(
   state: GrowthState,
   keyboard: number,
   mouse: number,
-  dailyExperience: number,
 ): { state: GrowthState; awarded: number; levels: number[] } {
-  for (const n of [keyboard, mouse, dailyExperience])
+  for (const n of [keyboard, mouse])
     if (!Number.isSafeInteger(n) || n < 0) throw new Error('无效成长数据');
   const keys = state.keyboardRemainder + keyboard;
   const clicks = state.mouseRemainder + mouse;
-  const raw =
+  const awarded =
     Math.floor(keys / GROWTH_RULES.keyboardCountPerExp) +
     Math.floor(clicks / GROWTH_RULES.mouseCountPerExp);
-  const awarded = Math.min(raw, Math.max(0, GROWTH_RULES.dailyInputExpCap - dailyExperience));
   const settled = settleExperience(state, awarded);
   return {
     state: {

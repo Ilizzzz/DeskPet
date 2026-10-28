@@ -20,6 +20,16 @@ export function readPosition(value: unknown): Point | undefined {
   return { x, y };
 }
 
+/**
+ * 旧版本窗口尺寸更小；按中心点换算位置，窗口变大后桌宠不会偏移。
+ */
+export function shiftForWindowResize(point: Point, savedSize: number, currentSize: number): Point {
+  if (!Number.isFinite(savedSize) || !Number.isFinite(currentSize) || savedSize === currentSize)
+    return point;
+  const delta = Math.round((currentSize - savedSize) / 2);
+  return { x: point.x + delta, y: point.y + delta };
+}
+
 export function restorePosition(
   point: Point | undefined,
   areas: Rectangle[],

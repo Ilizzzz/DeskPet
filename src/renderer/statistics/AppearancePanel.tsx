@@ -1,90 +1,229 @@
 import { useEffect, useState } from 'react';
-import type { Appearance, AppearanceChange } from '../../shared/types/appearance';
-import { CHARACTERS, ITEMS, SCENES } from '../../data/catalogs/appearance';
-
-const rarityNames = { common: '普通', rare: '稀有', epic: '史诗', legendary: '传说' } as const;
+import { CHARACTERS, ITEMS, SCENES, UI_ICONS } from '../../data/catalogs/appearance';
+import {
+  ITEM_SLOTS,
+  RARITY_LABELS,
+  SLOT_LABELS,
+  type AppearanceChange,
+} from '../../shared/types/appearance';
+import { loadAppearance, publishAppearance, useAppearance } from './appearance-store';
+import { CatalogIcon } from './CatalogIcon';
+import { PetPreview } from './PetPreview';
+import { isTransparentScene, sceneBackgroundStyle } from './scene-style';
 
 export function AppearancePanel() {
-  const [appearance, setAppearance] = useState<Appearance>();
+  const appearance = useAppearance();
   const [error, setError] = useState('');
+  const [busy, setBusy] = useState(false);
+
   useEffect(() => {
-    void window.desktopApi
-      .getAppearance()
-      .then(setAppearance)
-      .catch(() => setError('无法读取外观。'));
+    let active = true;
+    loadAppearance().catch(() => {
+      if (active) setError('无法读取外观数据，请稍后重试。');
+    });
+    return () => {
+      active = false;
+    };
   }, []);
-  async function change(value: AppearanceChange) {
+
+  async function change(next: AppearanceChange) {
+    setBusy(true);
     try {
-      setAppearance(await window.desktopApi.setAppearance(value));
+      publishAppearance(await window.desktopApi.setAppearance(next));
       setError('');
-    } catch {
-      setError('无法更换外观，请确认已解锁或拥有该物品。');
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : '更换失败，请确认已解锁或拥有该物品。');
+    } finally {
+      setBusy(false);
     }
   }
-  if (!appearance) return <p>{error || '正在读取外观…'}</p>;
-  const owned = new Set(
-    appearance.inventory.filter((entry) => entry.quantity > 0).map((entry) => entry.itemId),
+
+  if (!appearance) {
+    return (
+      <section className="content-card appearance-panel" aria-busy="true">
+        <div className="section-heading">
+          <div>
+            <span className="eyebrow">APPEARANCE</span>
+            <h2>外观</h2>
+          </div>
+        </div>
+        {error ? (
+          <p className="inline-error" role="alert">
+            {error}
+          </p>
+        ) : (
+          <p className="inline-loading">正在读取外观…</p>
+        )}
+      </section>
+    );
+  }
+
+  const owned = new Map(
+    appearance.inventory
+      .filter((entry) => entry.quantity > 0)
+      .map((entry) => [entry.itemId, entry.quantity]),
   );
+  const equippedCount = ITEM_SLOTS.filter((slot) => appearance.equipped[slot]).length;
+
   return (
-    <section className="content-card" aria-label="桌宠外观">
-      <span className="eyebrow">COMPANION</span>
-      <h2>桌宠外观</h2>
-      {error && <p role="alert">{error}</p>}
-      <p>星星币：{appearance.balance}</p>
-      <label>
-        角色{' '}
-        <select
-          value={appearance.character}
-          onChange={(event) =>
-            void change({ character: event.target.value as Appearance['character'] })
-          }
-        >
-          {CHARACTERS.map((entry) => (
-            <option
-              key={entry.id}
-              value={entry.id}
-              disabled={entry.id !== 'cat' && !appearance.unlocks.includes(entry.id)}
-            >
-              {entry.name}（{entry.unlockLevel} 级）
-            </option>
-          ))}
-        </select>
-      </label>{' '}
-      <label>
-        场景{' '}
-        <select
-          value={appearance.scene}
-          onChange={(event) => void change({ scene: event.target.value as Appearance['scene'] })}
-        >
-          {SCENES.map((entry) => (
-            <option
-              key={entry.id}
-              value={entry.id}
-              disabled={entry.id !== 'transparent' && !appearance.unlocks.includes(entry.id)}
-            >
-              {entry.name}（{entry.unlockLevel} 级）
-            </option>
-          ))}
-        </select>
-      </label>{' '}
-      {(['head', 'neck'] as const).map((slot) => (
-        <label key={slot}>
-          {slot === 'head' ? '头部' : '颈部'}{' '}
-          <select
-            value={appearance[slot] ?? ''}
-            onChange={(event) =>
-              void change({ [slot]: event.target.value || null } as AppearanceChange)
-            }
-          >
-            <option value="">无</option>
-            {ITEMS.filter((item) => item.slot === slot).map((item) => (
-              <option key={item.id} value={item.id} disabled={!owned.has(item.id)}>
-                {item.name} · {rarityNames[item.rarity]}
-              </option>
-            ))}
-          </select>{' '}
-        </label>
-      ))}
-    </section>
+    <div className="appearance-panel">
+      <section className="content-card" aria-label="当前外观">
+        <div className="section-heading">
+          <div>
+            <span className="eyebrow">CURRENT LOOK</span>
+            <h2>当前外观</h2>
+            <p>桌面上的伙伴会实时使用这里的选择。</p>
+          </div>
+          <span className="privacy-chip">已佩戴 {equippedCount} / 5</span>
+        </div>
+        <PetPreview appearance={appearance} />
+        {error && (
+          <p className="inline-error" role="alert">
+            {error}
+          </p>
+        )}
+      </section>
+
+      <section className="content-card" aria-label="选择伙伴">
+        <div className="section-heading">
+          <div>
+            <span className="eyebrow">COMPANIONS</span>
+            <h2>伙伴</h2>
+            <p>达到等级后自动解锁，随时可以换回喜欢的伙伴。</p>
+          </div>
+        </div>
+        <div className="character-grid">
+          {CHARACTERS.map((entry) => {
+            const unlocked =
+              appearance.unlocks.includes(entry.id) || appearance.level >= entry.unlockLevel;
+            const selected = appearance.character === entry.id;
+            return (
+              <button
+                type="button"
+                key={entry.id}
+                className={`character-card ${selected ? 'selected' : ''} ${
+                  unlocked ? '' : 'locked'
+                }`}
+                aria-pressed={selected}
+                aria-label={`${entry.name}，${unlocked ? '已解锁' : `等级 ${entry.unlockLevel} 解锁`}`}
+                disabled={!unlocked || busy}
+                onClick={() => void change({ character: entry.id })}
+              >
+                <CatalogIcon src={entry.asset} fallback={UI_ICONS.app} />
+                <strong>{entry.name}</strong>
+                <small>
+                  {unlocked ? (selected ? '使用中' : '已解锁') : `Lv.${entry.unlockLevel} 解锁`}
+                </small>
+              </button>
+            );
+          })}
+        </div>
+      </section>
+
+      <section className="content-card" aria-label="选择场景">
+        <div className="section-heading">
+          <div>
+            <span className="eyebrow">SCENES</span>
+            <h2>场景</h2>
+            <p>场景只影响桌宠背后的氛围，不会替换你的壁纸。</p>
+          </div>
+        </div>
+        <div className="scene-grid">
+          {SCENES.map((entry) => {
+            const unlocked =
+              appearance.unlocks.includes(entry.id) || appearance.level >= entry.unlockLevel;
+            const selected = appearance.scene === entry.id;
+            return (
+              <button
+                type="button"
+                key={entry.id}
+                className={`scene-card ${selected ? 'selected' : ''} ${unlocked ? '' : 'locked'}`}
+                aria-pressed={selected}
+                aria-label={`${entry.name}，${unlocked ? '已解锁' : `等级 ${entry.unlockLevel} 解锁`}`}
+                disabled={!unlocked || busy}
+                onClick={() => void change({ scene: entry.id })}
+              >
+                <span
+                  className={
+                    isTransparentScene(entry) ? 'scene-swatch transparent' : 'scene-swatch'
+                  }
+                  style={sceneBackgroundStyle(entry)}
+                />
+                <strong>{entry.name}</strong>
+                <small>
+                  {unlocked ? (selected ? '使用中' : '已解锁') : `Lv.${entry.unlockLevel} 解锁`}
+                </small>
+              </button>
+            );
+          })}
+        </div>
+      </section>
+
+      <section className="content-card" aria-label="选择饰品">
+        <div className="section-heading">
+          <div>
+            <span className="eyebrow">ACCESSORIES</span>
+            <h2>五槽位饰品</h2>
+            <p>头部、颈部、面部、手持和背部可以同时佩戴。</p>
+          </div>
+          <span className="privacy-chip">拥有即穿戴</span>
+        </div>
+        {ITEM_SLOTS.map((slot) => {
+          const items = ITEMS.filter((item) => item.slot === slot);
+          const equippedId = appearance.equipped[slot];
+          return (
+            <div className="slot-group" key={slot}>
+              <header>
+                <strong>{SLOT_LABELS[slot]}</strong>
+                <button
+                  type="button"
+                  disabled={!equippedId || busy}
+                  onClick={() => void change({ equipped: { slot, itemId: null } })}
+                >
+                  卸下
+                </button>
+              </header>
+              <div className="item-grid">
+                {items.map((item) => {
+                  const quantity = owned.get(item.id) ?? 0;
+                  const unlocked = quantity > 0;
+                  const selected = equippedId === item.id;
+                  return (
+                    <button
+                      type="button"
+                      key={item.id}
+                      className={`item-card ${selected ? 'selected' : ''} ${
+                        unlocked ? '' : 'locked'
+                      }`}
+                      aria-pressed={selected}
+                      aria-label={`${item.name}，${RARITY_LABELS[item.rarity]}，${
+                        unlocked ? `拥有 ${quantity} 件` : `等级 ${item.unlockLevel} 解锁，尚未拥有`
+                      }`}
+                      disabled={!unlocked || busy}
+                      onClick={() => void change({ equipped: { slot, itemId: item.id } })}
+                    >
+                      <CatalogIcon src={item.asset} fallback={UI_ICONS.app} />
+                      <span className="item-card-body">
+                        <span>
+                          <strong>{item.name}</strong>
+                        </span>
+                        <span>
+                          <span className={`rarity-badge rarity-${item.rarity}`}>
+                            {RARITY_LABELS[item.rarity]}
+                          </span>
+                          <small>
+                            {unlocked ? `拥有 ${quantity}` : `Lv.${item.unlockLevel} 解锁`}
+                          </small>
+                        </span>
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })}
+      </section>
+    </div>
   );
 }

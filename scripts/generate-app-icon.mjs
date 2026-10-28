@@ -2,6 +2,8 @@ import { mkdirSync, writeFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+// 应用图标：奶油底 + 橙色虎斑猫头，配色与 public/assets/characters/cat.png（Fluent Emoji）一致。
+// 运行时用纯 JS 光栅化，不读取 PNG，也不引入图像依赖。
 const size = 256;
 const pixelBytes = size * size * 4;
 const maskRowBytes = Math.ceil(size / 32) * 4;
@@ -15,6 +17,15 @@ dib.writeUInt16LE(1, 12);
 dib.writeUInt16LE(32, 14);
 dib.writeUInt32LE(pixelBytes, 20);
 
+const CREAM = [253, 241, 227, 255];
+const FUR = [240, 162, 104, 255];
+const STRIPE = [139, 90, 60, 255];
+const EAR_INNER = [246, 198, 176, 255];
+const MUZZLE = [255, 227, 194, 255];
+const EYE = [59, 42, 34, 255];
+const NOSE = [226, 121, 94, 255];
+const WHITE = [255, 255, 255, 255];
+
 function circle(x, y, cx, cy, radius) {
   return (x - cx) ** 2 + (y - cy) ** 2 <= radius ** 2;
 }
@@ -24,6 +35,18 @@ function triangle(x, y, ax, ay, bx, by, cx, cy) {
   const second = (x - cx) * (by - cy) - (bx - cx) * (y - cy);
   const third = (x - ax) * (cy - ay) - (cx - ax) * (y - ay);
   return (first >= 0 && second >= 0 && third >= 0) || (first <= 0 && second <= 0 && third <= 0);
+}
+
+/** 圆头胶囊，用于画虎斑短条纹。 */
+function capsule(x, y, ax, ay, bx, by, radius) {
+  const dx = bx - ax;
+  const dy = by - ay;
+  const lengthSquared = dx * dx + dy * dy;
+  const t =
+    lengthSquared === 0
+      ? 0
+      : Math.max(0, Math.min(1, ((x - ax) * dx + (y - ay) * dy) / lengthSquared));
+  return (x - (ax + t * dx)) ** 2 + (y - (ay + t * dy)) ** 2 <= radius * radius;
 }
 
 function roundedSquare(x, y, inset, radius) {
@@ -40,16 +63,38 @@ function roundedSquare(x, y, inset, radius) {
 }
 
 function colorAt(x, y) {
-  if (!roundedSquare(x, y, 8, 52)) return [0, 0, 0, 0];
-  let color = [224, 125, 94, 255];
-  if (triangle(x, y, 48, 112, 54, 45, 112, 88)) color = [239, 167, 125, 255];
-  if (triangle(x, y, 208, 112, 202, 45, 144, 88)) color = [239, 167, 125, 255];
-  if (circle(x, y, 128, 139, 82)) color = [248, 194, 153, 255];
-  if (circle(x, y, 95, 132, 9) || circle(x, y, 161, 132, 9)) color = [77, 57, 49, 255];
-  if (triangle(x, y, 128, 146, 120, 157, 136, 157)) color = [117, 73, 63, 255];
-  if ((circle(x, y, 115, 165, 15) || circle(x, y, 141, 165, 15)) && y > 161)
-    color = [117, 73, 63, 255];
-  if (circle(x, y, 115, 160, 11) || circle(x, y, 141, 160, 11)) color = [248, 194, 153, 255];
+  if (!roundedSquare(x, y, 8, 56)) return [0, 0, 0, 0];
+  let color = CREAM;
+
+  // 耳朵：外层橙色，内层浅粉；头部圆形会盖住耳根。
+  if (triangle(x, y, 48, 106, 56, 30, 118, 84) || triangle(x, y, 208, 106, 200, 30, 138, 84)) {
+    color = FUR;
+  }
+  if (triangle(x, y, 64, 94, 70, 46, 106, 84) || triangle(x, y, 192, 94, 186, 46, 150, 84)) {
+    color = EAR_INNER;
+  }
+
+  // 头部
+  if (circle(x, y, 128, 130, 82)) color = FUR;
+
+  // 额头虎斑
+  if (
+    capsule(x, y, 104, 92, 104, 116, 6) ||
+    capsule(x, y, 128, 86, 128, 114, 6) ||
+    capsule(x, y, 152, 92, 152, 116, 6)
+  ) {
+    color = STRIPE;
+  }
+
+  // 眼睛与高光
+  if (circle(x, y, 98, 136, 11) || circle(x, y, 158, 136, 11)) color = EYE;
+  if (circle(x, y, 94, 131, 3.4) || circle(x, y, 154, 131, 3.4)) color = WHITE;
+
+  // 鼻子与奶油色嘴部
+  if (triangle(x, y, 128, 146, 119, 158, 137, 158)) color = NOSE;
+  if (circle(x, y, 111, 168, 14) || circle(x, y, 145, 168, 14)) color = MUZZLE;
+  if (triangle(x, y, 128, 152, 120, 160, 136, 160)) color = NOSE;
+
   return color;
 }
 

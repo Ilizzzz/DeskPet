@@ -2,6 +2,9 @@ node_modules/
 .vite/
 out/
 build/
+dist/
 coverage/
 *.log
 deskpet-forge-template/
+.tmp-assets/
+.tmp-preview/

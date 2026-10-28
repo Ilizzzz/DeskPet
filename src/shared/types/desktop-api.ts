@@ -6,6 +6,14 @@ import type { ToolId, ToolState } from './tool';
 import type { SedentarySettings, SedentarySnapshot } from './sedentary';
 import type { DailySummary } from './summary';
 import type { AppPreferenceChange, AppSettingsSnapshot } from './settings';
+import type { AchievementState } from './achievement';
+import type { CheckinStatus } from './checkin';
+import type { AnniversaryView } from './anniversary';
+import type { Countdown } from './countdown';
+import type { Todo, TodoChange } from './todo';
+import type { WaterSettings, WaterSnapshot } from './water';
+
+/** 渲染进程可用的最小化平台能力集合，全部经 Preload 的 contextBridge 暴露。 */
 export interface DesktopApi {
   readonly platform: NodeJS.Platform;
   openDashboard(): Promise<void>;
@@ -24,6 +32,7 @@ export interface DesktopApi {
   getAppearance(): Promise<Appearance>;
   setAppearance(change: AppearanceChange): Promise<Appearance>;
   craftItem(recipeId: string): Promise<Appearance>;
+  dismantleItem(itemId: string): Promise<Appearance>;
   listTools(): Promise<ToolState[]>;
   setToolEnabled(id: ToolId, enabled: boolean): Promise<ToolState[]>;
   getSedentary(): Promise<SedentarySnapshot>;
@@ -31,6 +40,23 @@ export interface DesktopApi {
   snoozeSedentary(minutes: number): Promise<SedentarySnapshot>;
   resetSedentary(): Promise<SedentarySnapshot>;
   getDailySummary(): Promise<DailySummary>;
+  getCheckin(): Promise<CheckinStatus>;
+  checkIn(): Promise<CheckinStatus>;
+  listAchievements(): Promise<AchievementState[]>;
+  claimAchievement(id: string): Promise<AchievementState[]>;
+  listTodos(): Promise<Todo[]>;
+  createTodo(content: string): Promise<Todo[]>;
+  updateTodo(id: number, change: TodoChange): Promise<Todo[]>;
+  deleteTodo(id: number): Promise<Todo[]>;
+  listCountdowns(): Promise<Countdown[]>;
+  createCountdown(label: string, minutes: number): Promise<Countdown[]>;
+  deleteCountdown(id: number): Promise<Countdown[]>;
+  listAnniversaries(): Promise<AnniversaryView[]>;
+  createAnniversary(title: string, date: string, repeatYearly: boolean): Promise<AnniversaryView[]>;
+  deleteAnniversary(id: number): Promise<AnniversaryView[]>;
+  getWater(): Promise<WaterSnapshot>;
+  configureWater(settings: WaterSettings): Promise<WaterSnapshot>;
+  drinkWater(): Promise<WaterSnapshot>;
   getAppSettings(): Promise<AppSettingsSnapshot>;
   updateAppPreference(change: AppPreferenceChange): Promise<AppSettingsSnapshot>;
   setInputTracking(enabled: boolean): Promise<AppSettingsSnapshot>;
@@ -38,4 +64,8 @@ export interface DesktopApi {
   getStatistics(): Promise<StatisticsSnapshot>;
   clearStatistics(): Promise<boolean>;
   exportStatistics(): Promise<boolean>;
+  /** 桌宠拖动由主进程跟踪光标完成，避免拖拽与点击事件互相抢焦点。 */
+  beginPetDrag(): Promise<void>;
+  endPetDrag(): Promise<void>;
+  openPetMenu(): Promise<void>;
 }

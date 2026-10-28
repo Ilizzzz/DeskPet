@@ -1,9 +1,9 @@
 import type { PetState, PetStateSignals } from '../../shared/types/pet';
 
+// 点击不再触发跳跃/摸头动画，避免拖动时被交互态打断；只保留被动状态。
 export function resolvePetState(signals: PetStateSignals): PetState {
   if (signals.dragging) return 'dragging';
   if (signals.levelUp) return 'levelup';
-  if (signals.interacting) return 'interact';
   if (signals.focus) return 'focus';
   if (signals.resting) return 'rest';
   if (signals.sleeping) return 'sleep';

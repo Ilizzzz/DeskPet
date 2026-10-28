@@ -1,14 +1,30 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import type { DailySummary } from '../../shared/types/summary';
 
 export function SummaryPanel() {
   const [summary, setSummary] = useState<DailySummary>();
-  const refresh = () => void window.desktopApi.getDailySummary().then(setSummary);
-  useEffect(refresh, []);
+  const [error, setError] = useState('');
+
+  const refresh = useCallback(() => {
+    void window.desktopApi
+      .getDailySummary()
+      .then((value) => {
+        setSummary(value);
+        setError('');
+      })
+      .catch(() => setError('无法生成今日总结。'));
+  }, []);
+
+  useEffect(refresh, [refresh]);
   return (
-    <section className="content-card tool-card" aria-label="今日总结">
+    <section className="content-card tool-card tool-panel" aria-label="今日总结">
       <span className="eyebrow">DAILY REVIEW</span>
       <h2>今日总结</h2>
+      {error && (
+        <p className="tool-error" role="alert">
+          {error}
+        </p>
+      )}
       {summary ? (
         <div className="summary-grid">
           <span>键盘 {summary.keyboardCount} 次</span>
@@ -20,7 +36,7 @@ export function SummaryPanel() {
           <span>奖励：{summary.rewards.length ? summary.rewards.join('、') : '无'}</span>
         </div>
       ) : (
-        <p>正在生成总结…</p>
+        <p className="tool-empty">{error ? '暂时没有可显示的数据。' : '正在生成总结…'}</p>
       )}
       <button onClick={refresh}>刷新总结</button>
     </section>

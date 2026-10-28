@@ -1938,6 +1938,27 @@ button:disabled {
   background: var(--green-soft);
 }
 
+/* 键鼠统计启动失败时的温和错误提示，不阻断其他功能。 */
+.status-banner.error {
+  margin-bottom: 14px;
+  color: #8c403c;
+  background: #fbe4e1;
+}
+
+.status-banner.error span {
+  flex: 1;
+  line-height: 1.55;
+}
+
+.status-banner.error button {
+  flex: 0 0 auto;
+}
+
+.state-chip.warning {
+  color: #8c403c;
+  background: #fbe4e1;
+}
+
 .error-banner {
   margin: 18px clamp(24px, 4vw, 46px) 0;
   color: #8c403c;

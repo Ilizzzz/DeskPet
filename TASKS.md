@@ -115,6 +115,23 @@
 - **仍需手工验收**：真实鼠标拖动/托盘/点击穿透、多显示器与高 DPI、锁屏/休眠、
   长时间跨日运行、Windows 10 干净环境安装/升级/卸载，以及真实设备上的素材锚点观感。
 
+## TASK-012：分发包原生模块修复（1.1.1）
+
+- 问题：1.1.0 安装包在干净电脑上启用键鼠统计时提示“键鼠监听不可用”。根因是 Vite 插件的
+  打包 `ignore` 会排除 `node_modules`，`uiohook-napi` 原生模块没有被复制进安装包；
+  开发机运行打包程序时会向上找到项目仓库的 `node_modules`，导致
+  `--input-hook-smoke-test` 误报通过。
+- 修复：`forge.config.mts` 增加 `packageAfterCopy` 钩子，复制 `uiohook-napi` 与
+  `node-gyp-build`，由 AutoUnpackNatives 插件把 `.node` 解包到
+  `resources/app.asar.unpacked`；新增 `scripts/check-package.mjs` 与
+  `npm run check:package`。
+- 降级：监听启动失败不再弹错误框阻断应用，统计保持暂停并在设置页显示原因和重试按钮；
+  托盘显示“统计不可用”；诊断写入 `%APPDATA%\DeskPet\input-diagnostics.log`。
+- 验证：把 `out/DeskPet-win32-x64` 复制到项目目录之外运行
+  `--input-hook-smoke-test` 退出码 0，正常启动稳定运行 7 秒；
+  `npm run check:package` 通过；重新生成 `1.1.1` 安装包和免安装压缩包。
+- 仍需手工验收：在另一台干净 Windows 电脑上实际安装并启用键鼠统计、确认脚本可加载。
+
 ## TASK-004 至 TASK-010 验证
 
 - 已通过 `npm run typecheck`、`npm run lint`、`npm run format:check` 和 `npm test`（21 个测试文件，33 个测试）。

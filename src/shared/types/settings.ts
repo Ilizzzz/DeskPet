@@ -11,6 +11,8 @@ export interface AppSettingsSnapshot extends PersistedAppPreferences {
     consentGiven: boolean;
     enabled: boolean;
     running: boolean;
+    /** 最近一次启动监听失败的原因；成功启动后清空。 */
+    error: string | null;
   };
 }
 

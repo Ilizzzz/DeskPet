@@ -1,7 +1,16 @@
 # DeskPet
 
 Windows 桌面宠物 + 成长养成 + 生产力工具。完全本地运行、无账号、离线可用。
-当前版本 `1.1.0`，产品需求与长期规划见 `DeskPet.md`，任务与验收记录见 `TASKS.md`。
+当前版本 `1.1.1`，产品需求与长期规划见 `DeskPet.md`，任务与验收记录见 `TASKS.md`。
+
+## 1.1.1 修复
+
+- 修复 1.1.0 安装包在干净电脑上启动键鼠统计时提示“键鼠监听不可用”：原生键鼠模块
+  `uiohook-napi` 之前没有被复制进安装包（开发机因为能找到仓库 `node_modules` 而误报通过）。
+- 新增 `npm run check:package` 校验打包产物必须包含并解包原生模块；发布前还应在
+  **项目目录之外**复制一份应用目录运行 `--input-hook-smoke-test` 做干净环境验证。
+- 监听启动失败不再弹错误框阻断：统计保持暂停，桌宠和工具箱继续可用；设置页显示原因
+  并支持重试，诊断日志位于 `%APPDATA%\DeskPet\input-diagnostics.log`。
 
 ## 1.1.0 主要变化
 
@@ -46,10 +55,14 @@ PNG 尺寸/透明通道以及授权登记是否完整。
 
 ```powershell
 npm run package
+npm run check:package
 npm run make
 ```
 
 生成的 Windows 应用目录和 Squirrel 安装包位于 `out/`。构建前会自动生成应用图标。
+`check:package` 会确认原生键鼠模块已包含并解包；发布前还应把
+`out/DeskPet-win32-x64` 复制到项目目录之外运行 `--input-hook-smoke-test`，
+避免开发机的 `node_modules` 掩盖打包缺失。
 
 发布说明、隐私说明、已知限制、卸载与第三方许可证分别见
 `docs/RELEASE_NOTES.md`、`docs/PRIVACY.md`、`docs/KNOWN_ISSUES.md`、

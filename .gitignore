@@ -6,5 +6,5 @@ dist/
 coverage/
 *.log
 deskpet-forge-template/
-.tmp-assets/
-.tmp-preview/
+.tmp-*/
+release/

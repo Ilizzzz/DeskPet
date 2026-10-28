@@ -1,7 +1,7 @@
 {
   "name": "deskpet",
   "productName": "DeskPet",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "private": true,
   "description": "Windows desktop pet application",
   "author": "DeskPet contributors",
@@ -9,6 +9,7 @@
   "scripts": {
     "generate:assets": "node scripts/generate-app-icon.mjs",
     "validate:assets": "node scripts/validate-assets.mjs",
+    "check:package": "node scripts/check-package.mjs",
     "prestart": "npm run generate:assets",
     "start": "electron-forge start",
     "prepackage": "npm run generate:assets",

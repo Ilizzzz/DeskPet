@@ -4,7 +4,7 @@
 
 - [开发手册](DEVELOPMENT_MANUAL.md)
 - [架构概览](ARCHITECTURE.md)
-- [1.1.0 发布说明](RELEASE_NOTES.md)
+- [1.1.1 发布说明](RELEASE_NOTES.md)
 - [TASK-011 设计契约](TASK011_DESIGN.md)
 - [TASK-011 素材清单](TASK011_ASSETS.md)
 - [美术资源指南](ASSET_GUIDE.md)

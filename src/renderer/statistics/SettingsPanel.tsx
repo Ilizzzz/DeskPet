@@ -32,7 +32,11 @@ export function SettingsPanel({
     try {
       const next = await window.desktopApi.setInputTracking(enabled);
       onSettings(next);
-      setMessage(next.inputTracking.enabled ? '聚合统计已启用。' : '聚合统计已暂停。');
+      if (next.inputTracking.error) {
+        setMessage(`键鼠统计不可用：${next.inputTracking.error}`);
+      } else {
+        setMessage(next.inputTracking.enabled ? '聚合统计已启用。' : '聚合统计已暂停。');
+      }
     } catch {
       setMessage('无法更新统计开关。');
     } finally {
@@ -126,10 +130,38 @@ export function SettingsPanel({
             <span className="eyebrow">PRIVACY</span>
             <h2>隐私与键鼠统计</h2>
           </div>
-          <span className={settings.inputTracking.running ? 'state-chip active' : 'state-chip'}>
-            {settings.inputTracking.running ? '统计中' : '已暂停'}
+          <span
+            className={
+              settings.inputTracking.error
+                ? 'state-chip warning'
+                : settings.inputTracking.running
+                  ? 'state-chip active'
+                  : 'state-chip'
+            }
+          >
+            {settings.inputTracking.error
+              ? '统计不可用'
+              : settings.inputTracking.running
+                ? '统计中'
+                : '已暂停'}
           </span>
         </div>
+        {settings.inputTracking.error && (
+          <div className="status-banner error" role="alert">
+            <span>
+              <strong>键鼠统计没有启动</strong>
+              <br />
+              桌宠、成长和工具箱仍可正常使用。原因：{settings.inputTracking.error}
+            </span>
+            <button
+              className="secondary-button"
+              disabled={busy}
+              onClick={() => void setInput(true)}
+            >
+              重试启用
+            </button>
+          </div>
+        )}
         <div className="privacy-explainer">
           <span className="shield-mark">✓</span>
           <div>

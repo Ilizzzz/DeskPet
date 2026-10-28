@@ -41,6 +41,8 @@ let clickThrough = false;
 let alwaysOnTop = true;
 let ignoringMouse = true;
 let inputPreferences = { consentGiven: false, enabled: false };
+/** 最近一次启动键鼠监听失败的原因；用于设置页提示和托盘状态。 */
+let inputError: string | null = null;
 let systemSuspended = false;
 let petDragging = false;
 let petDragTimer: NodeJS.Timeout | undefined;
@@ -91,6 +93,7 @@ function appSettingsSnapshot() {
       consentGiven: inputPreferences.consentGiven,
       enabled: inputPreferences.enabled,
       running: inputMonitor.isRunning,
+      error: inputError,
     },
   };
 }
@@ -100,7 +103,32 @@ function applyLaunchAtLogin(enabled: boolean): void {
   app.setLoginItemSettings({ openAtLogin: enabled, path: process.execPath });
 }
 
-async function setInputEnabled(enabled: boolean): Promise<void> {
+/**
+ * 记录监听失败时的诊断信息，方便远程支持。
+ *
+ * 只写平台、架构、资源路径和错误栈，不记录任何按键内容。
+ */
+function logInputFailure(error: unknown): string {
+  const file = path.join(app.getPath('userData'), 'input-diagnostics.log');
+  try {
+    const header = [
+      `time=${new Date().toISOString()}`,
+      `version=${app.getVersion()}`,
+      `platform=${process.platform}`,
+      `arch=${process.arch}`,
+      `packaged=${app.isPackaged}`,
+      `resources=${process.resourcesPath}`,
+      `userData=${app.getPath('userData')}`,
+    ].join('\n');
+    const detail = error instanceof Error ? (error.stack ?? error.message) : String(error);
+    fs.appendFileSync(file, `${header}\nerror=${detail}\n\n`, 'utf8');
+  } catch (logError) {
+    console.error('无法写入监听诊断日志。', logError);
+  }
+  return file;
+}
+
+async function setInputEnabled(enabled: boolean, interactive = true): Promise<void> {
   if (enabled && !inputPreferences.consentGiven) {
     const response = dialog.showMessageBoxSync({
       type: 'info',
@@ -122,16 +150,32 @@ async function setInputEnabled(enabled: boolean): Promise<void> {
     inputPreferences = next;
     if (enabled && !systemSuspended) await inputMonitor.start();
     else inputMonitor.stop();
+    inputError = null;
   } catch (error) {
     inputMonitor.stop();
     inputPreferences = { ...inputPreferences, enabled: false };
+    inputError = error instanceof Error ? error.message : String(error);
     try {
       writeInputPreferences(inputPreferencesPath(), inputPreferences);
     } catch (saveError) {
       console.error('无法保存监听暂停状态。', saveError);
     }
+    const logFile = logInputFailure(error);
     console.error('键鼠监听不可用。', error);
-    dialog.showErrorBox('键鼠监听不可用', '监听未启动。请检查安装包中的原生模块或系统权限。');
+    // 不阻塞桌宠和工具的启动流程；只有用户主动启用时才弹出温和提示。
+    if (interactive) {
+      void dialog.showMessageBox({
+        type: 'warning',
+        title: '键鼠统计暂不可用',
+        message: '统计没有启动，桌宠和工具箱仍可正常使用。',
+        detail:
+          `原因：${inputError}\n\n` +
+          '可以稍后在“设置 → 隐私与键鼠统计”重新启用。如果持续失败，请检查杀毒软件是否拦截了原生模块，或将以下诊断日志发给开发者：\n' +
+          logFile,
+        buttons: ['知道了'],
+        noLink: true,
+      });
+    }
   }
   updateTray();
 }
@@ -246,13 +290,15 @@ function petMenuItems(): Electron.MenuItemConstructorOptions[] {
   ];
 }
 function updateTray(): void {
-  const status = inputMonitor.isRunning ? '统计中' : '已暂停';
+  const status = inputError ? '统计不可用' : inputMonitor.isRunning ? '统计中' : '已暂停';
   tray?.setToolTip(`DeskPet · ${status}`);
   tray?.setContextMenu(
     Menu.buildFromTemplate([
       { label: `键鼠统计：${status}`, enabled: false },
       {
-        label: `本次：键盘 ${inputMonitor.totals.keyboardCount} / 鼠标 ${inputMonitor.totals.mouseCount}`,
+        label: inputError
+          ? '统计启动失败，可在控制中心“设置”中重试'
+          : `本次：键盘 ${inputMonitor.totals.keyboardCount} / 鼠标 ${inputMonitor.totals.mouseCount}`,
         enabled: false,
       },
       {
@@ -642,6 +688,7 @@ function registerStatisticsIpc(): void {
     });
     if (choice !== 1) return false;
     inputMonitor.stop();
+    inputError = null;
     persistPending();
     inputPreferences = { consentGiven: false, enabled: false };
     writeInputPreferences(inputPreferencesPath(), inputPreferences);
@@ -816,7 +863,7 @@ else {
     });
     const resume = () => {
       systemSuspended = false;
-      if (inputPreferences.enabled) void setInputEnabled(true);
+      if (inputPreferences.enabled) void setInputEnabled(true, false);
     };
     powerMonitor.on('unlock-screen', resume);
     powerMonitor.on('resume', resume);
@@ -827,7 +874,7 @@ else {
       })
     )
       console.warn('监听快捷键注册失败。');
-    if (inputPreferences.enabled) void setInputEnabled(true);
+    if (inputPreferences.enabled) void setInputEnabled(true, false);
   });
 }
 app.on('before-quit', () => {

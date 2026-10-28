@@ -1,6 +1,19 @@
-# DeskPet 1.1.0 发布说明
+# DeskPet 发布说明
+
+## 1.1.1：修复安装包原生模块缺失
 
 发布日期：2026-10-28
+
+- 修复 1.1.0 安装包在**其他电脑**上提示“键鼠监听不可用”的问题：Vite 打包会忽略
+  `node_modules`，导致原生键鼠模块 `uiohook-napi` 没有被复制进安装包；开发机因为
+  能找到项目仓库的 `node_modules`，原有 `--input-hook-smoke-test` 属于误报通过。
+- 打包配置新增 `packageAfterCopy` 钩子，复制 `uiohook-napi` 与 `node-gyp-build`，
+  并确认 `.node` 文件解包到 `resources/app.asar.unpacked`；新增
+  `npm run check:package` 校验打包内容。
+- 监听启动失败时改为**非阻塞提示**：统计保持暂停，桌宠和工具箱继续可用；
+  失败原因写入 `%APPDATA%\DeskPet\input-diagnostics.log`，设置页会显示原因和“重试启用”。
+- 托盘和设置页显示“统计不可用”状态，不再弹出错误框阻断启动流程。
+- 安装包与免安装版均使用 `1.1.1` 版本号。
 
 ## 1.1.0：美术升级与内容扩展
 

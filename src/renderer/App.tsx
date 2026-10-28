@@ -17,6 +17,8 @@ export function App() {
   const [sleeping, setSleeping] = useState(false);
   const [dragging, setDragging] = useState(false);
   const [focus, setFocus] = useState(false);
+  const [animationsEnabled, setAnimationsEnabled] = useState(true);
+  const [artworkFailed, setArtworkFailed] = useState(false);
   const previousLevel = useRef<number | undefined>(undefined);
   const levelTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const interactionTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
@@ -32,8 +34,12 @@ export function App() {
   useEffect(() => {
     let active = true;
     const refresh = () => {
-      void Promise.all([window.desktopApi.getAppearance(), window.desktopApi.getFocus()])
-        .then(([value, focusTimer]) => {
+      void Promise.all([
+        window.desktopApi.getAppearance(),
+        window.desktopApi.getFocus(),
+        window.desktopApi.getAppSettings(),
+      ])
+        .then(([value, focusTimer, settings]) => {
           if (!active) return;
           if (previousLevel.current !== undefined && value.level > previousLevel.current) {
             setLevelUp(true);
@@ -43,6 +49,7 @@ export function App() {
           previousLevel.current = value.level;
           setAppearance(value);
           setFocus(focusTimer.status === 'running' && focusTimer.kind === 'focus');
+          setAnimationsEnabled(settings.animationsEnabled);
         })
         .catch((error: unknown) => console.error('无法读取桌宠状态', error));
     };
@@ -94,6 +101,8 @@ export function App() {
     };
   }, [appearance]);
 
+  useEffect(() => setArtworkFailed(false), [appearance?.character]);
+
   const interact = () => {
     wake();
     setInteracting(true);
@@ -112,7 +121,7 @@ export function App() {
   };
 
   return (
-    <main>
+    <main className={`pet-stage ${animationsEnabled ? '' : 'motion-disabled'}`}>
       <div
         className={`pet pet-state-${petState}`}
         role="img"
@@ -125,17 +134,51 @@ export function App() {
         onMouseLeave={() => setDragging(false)}
       >
         {resources?.scene.background && (
-          <img className="scene-layer scene-background" src={resources.scene.background} alt="" />
+          <img
+            className="scene-layer scene-background"
+            src={resources.scene.background}
+            alt=""
+            onError={(event) => (event.currentTarget.hidden = true)}
+          />
         )}
-        {resources && <img className="pet-character" src={resources.character.asset} alt="" />}
+        {resources && !artworkFailed && (
+          <img
+            className="pet-character"
+            src={resources.character.asset}
+            alt=""
+            onError={() => setArtworkFailed(true)}
+          />
+        )}
+        {resources && artworkFailed && (
+          <span className="pet-artwork-fallback" aria-hidden="true">
+            {resources.character.id === 'fox' ? '🦊' : '🐱'}
+          </span>
+        )}
         {resources?.head && (
-          <img className="pet-item" src={resources.head.asset} style={itemStyle('head')} alt="" />
+          <img
+            className="pet-item"
+            src={resources.head.asset}
+            style={itemStyle('head')}
+            alt=""
+            onError={(event) => (event.currentTarget.hidden = true)}
+          />
         )}
         {resources?.neck && (
-          <img className="pet-item" src={resources.neck.asset} style={itemStyle('neck')} alt="" />
+          <img
+            className="pet-item"
+            src={resources.neck.asset}
+            style={itemStyle('neck')}
+            alt=""
+            onError={(event) => (event.currentTarget.hidden = true)}
+          />
         )}
         {resources?.scene.foreground && (
-          <img className="scene-layer scene-foreground" src={resources.scene.foreground} alt="" />
+          <img
+            className="scene-layer scene-foreground"
+            src={resources.scene.foreground}
+            alt=""
+            onError={(event) => (event.currentTarget.hidden = true)}
+          />
         )}
         <button
           className="pet-interaction"

@@ -8,10 +8,15 @@ import { FuseV1Options, FuseVersion } from '@electron/fuses';
 const config: ForgeConfig = {
   packagerConfig: {
     asar: true,
+    icon: 'build/icon',
   },
   // uiohook-napi 自带 Windows N-API 预编译文件；Forge 的源码重建会在本机失败。
   rebuildConfig: { ignoreModules: ['uiohook-napi'] },
-  makers: [new MakerSquirrel({})],
+  makers: [
+    new MakerSquirrel({
+      setupIcon: 'build/icon.ico',
+    }),
+  ],
   plugins: [
     new AutoUnpackNativesPlugin({}),
     new VitePlugin({

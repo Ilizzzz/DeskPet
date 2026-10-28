@@ -32,4 +32,33 @@ describe('statistics persistence', () => {
       rmSync(directory, { recursive: true, force: true });
     }
   });
+  it('resets user content without rebuilding the database', () => {
+    const store = new StatisticsStore(':memory:');
+    store.add({
+      date: '2026-01-02',
+      keyboardCount: 2500,
+      mouseCount: 0,
+      activeSeconds: 60,
+    });
+    store.notes.create();
+    store.preferences.update({ animationsEnabled: false });
+    store.resetUserData();
+    expect(store.snapshot(new Date(2026, 0, 2))).toMatchObject({
+      growth: { level: 1, totalExperience: 0 },
+      total: { keyboardCount: 0, mouseCount: 0 },
+    });
+    expect(store.notes.all()).toEqual([]);
+    expect(store.appearance.get()).toMatchObject({
+      character: 'cat',
+      scene: 'transparent',
+      balance: 0,
+      inventory: [],
+    });
+    expect(store.preferences.get()).toEqual({
+      animationsEnabled: true,
+      onboardingCompleted: false,
+      launchAtLogin: false,
+    });
+    store.close();
+  });
 });

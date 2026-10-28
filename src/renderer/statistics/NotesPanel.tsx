@@ -126,8 +126,9 @@ export function NotesPanel() {
     }
   }
   return (
-    <section aria-label="便签">
-      <h2>便签</h2>
+    <section className="content-card tool-card" aria-label="便签">
+      <span className="eyebrow">NOTES</span>
+      <h2>桌面便签</h2>
       {error && <p role="alert">{error}</p>}
       <button onClick={() => void add()}>新建便签</button>
       {notes.map((note) => (

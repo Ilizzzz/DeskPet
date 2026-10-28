@@ -23,7 +23,8 @@ export function InventoryPanel() {
   }
   if (!appearance) return <p>正在读取背包…</p>;
   return (
-    <section aria-label="背包与合成">
+    <section className="content-card" aria-label="背包与合成">
+      <span className="eyebrow">COLLECTION</span>
       <h2>背包与合成</h2>
       <p>
         星星币：{appearance.balance} ·{' '}

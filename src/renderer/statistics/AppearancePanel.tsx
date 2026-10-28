@@ -26,7 +26,8 @@ export function AppearancePanel() {
     appearance.inventory.filter((entry) => entry.quantity > 0).map((entry) => entry.itemId),
   );
   return (
-    <section aria-label="桌宠外观">
+    <section className="content-card" aria-label="桌宠外观">
+      <span className="eyebrow">COMPANION</span>
       <h2>桌宠外观</h2>
       {error && <p role="alert">{error}</p>}
       <p>星星币：{appearance.balance}</p>

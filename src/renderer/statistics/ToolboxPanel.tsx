@@ -25,8 +25,9 @@ export function ToolboxPanel() {
   }
   return (
     <>
-      <section aria-label="工具箱设置">
-        <h2>工具箱</h2>
+      <section className="content-card toolbox-settings" aria-label="工具箱设置">
+        <span className="eyebrow">TOOLBOX</span>
+        <h2>工具开关</h2>
         {error && <p role="alert">{error}</p>}
         <div className="tool-toggles">
           {tools.map((tool) => (

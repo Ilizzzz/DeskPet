@@ -6,7 +6,8 @@ export function SummaryPanel() {
   const refresh = () => void window.desktopApi.getDailySummary().then(setSummary);
   useEffect(refresh, []);
   return (
-    <section aria-label="今日总结">
+    <section className="content-card tool-card" aria-label="今日总结">
+      <span className="eyebrow">DAILY REVIEW</span>
       <h2>今日总结</h2>
       {summary ? (
         <div className="summary-grid">

@@ -76,6 +76,24 @@ function inputPreferencesPath(): string {
   return path.join(app.getPath('userData'), 'input-preferences.json');
 }
 
+function appSettingsSnapshot() {
+  return {
+    ...statisticsStore!.preferences.get(),
+    appVersion: app.getVersion(),
+    canLaunchAtLogin: app.isPackaged,
+    inputTracking: {
+      consentGiven: inputPreferences.consentGiven,
+      enabled: inputPreferences.enabled,
+      running: inputMonitor.isRunning,
+    },
+  };
+}
+
+function applyLaunchAtLogin(enabled: boolean): void {
+  if (!app.isPackaged) return;
+  app.setLoginItemSettings({ openAtLogin: enabled, path: process.execPath });
+}
+
 async function setInputEnabled(enabled: boolean): Promise<void> {
   if (enabled && !inputPreferences.consentGiven) {
     const response = dialog.showMessageBoxSync({
@@ -152,7 +170,7 @@ function updateTray(): void {
           void setInputEnabled(!inputPreferences.enabled);
         },
       },
-      { label: '查看统计', click: () => createStatisticsWindow() },
+      { label: '打开控制中心', click: () => createStatisticsWindow() },
       { type: 'separator' },
       {
         label: '显示桌宠',
@@ -203,9 +221,14 @@ function createStatisticsWindow(): void {
     return;
   }
   const window = new BrowserWindow({
-    width: 720,
-    height: 650,
-    title: 'DeskPet 统计',
+    width: 1040,
+    height: 760,
+    minWidth: 840,
+    minHeight: 620,
+    useContentSize: true,
+    autoHideMenuBar: true,
+    backgroundColor: '#f7f1eb',
+    title: 'DeskPet 控制中心',
     show: false,
     webPreferences: {
       preload: path.join(__dirname, 'preload.cjs'),
@@ -462,6 +485,61 @@ function registerStatisticsIpc(): void {
     flushStatistics();
     return statisticsStore!.summary.get();
   });
+  ipcMain.handle('settings:get', (event, ...args: unknown[]) => {
+    verifyPetRead(event, args);
+    return appSettingsSnapshot();
+  });
+  ipcMain.handle('settings:update', (event, ...args: unknown[]) => {
+    if (args.length !== 1) throw new Error('无效应用设置');
+    verify(event, []);
+    const value = args[0];
+    if (!value || typeof value !== 'object' || Array.isArray(value))
+      throw new Error('无效应用设置');
+    const keys = Object.keys(value);
+    if (
+      keys.length !== 1 ||
+      !['animationsEnabled', 'onboardingCompleted', 'launchAtLogin'].includes(keys[0]) ||
+      typeof (value as Record<string, unknown>)[keys[0]] !== 'boolean'
+    )
+      throw new Error('无效应用设置');
+    if (keys[0] === 'launchAtLogin') {
+      const launchAtLogin = (value as { launchAtLogin: boolean }).launchAtLogin;
+      if (launchAtLogin && !app.isPackaged) throw new Error('开发模式不能设置开机启动');
+      applyLaunchAtLogin(launchAtLogin);
+    }
+    statisticsStore!.preferences.update(value);
+    return appSettingsSnapshot();
+  });
+  ipcMain.handle('settings:set-input', async (event, ...args: unknown[]) => {
+    if (args.length !== 1 || typeof args[0] !== 'boolean') throw new Error('无效监听设置');
+    verify(event, []);
+    await setInputEnabled(args[0]);
+    return appSettingsSnapshot();
+  });
+  ipcMain.handle('settings:reset-all', (event, ...args: unknown[]) => {
+    verify(event, args);
+    const choice = dialog.showMessageBoxSync(statisticsWindow!, {
+      type: 'warning',
+      title: '重置 DeskPet',
+      message: '清除全部本地数据并恢复默认设置？',
+      detail: '键鼠统计、成长、奖励、背包、便签、专注记录和应用偏好都会被清除。此操作无法撤销。',
+      buttons: ['取消', '清除并重置'],
+      defaultId: 0,
+      cancelId: 0,
+      noLink: true,
+    });
+    if (choice !== 1) return false;
+    inputMonitor.stop();
+    persistPending();
+    inputPreferences = { consentGiven: false, enabled: false };
+    writeInputPreferences(inputPreferencesPath(), inputPreferences);
+    statisticsStore!.resetUserData();
+    applyLaunchAtLogin(false);
+    fs.rmSync(positionPath(), { force: true });
+    for (const window of noteWindows.values()) window.close();
+    updateTray();
+    return true;
+  });
   ipcMain.handle('statistics:get', (event, ...args: unknown[]) => {
     verify(event, args);
     flushStatistics();
@@ -586,9 +664,17 @@ else {
     }
     registerStatisticsIpc();
     inputPreferences = readInputPreferences(inputPreferencesPath());
+    try {
+      applyLaunchAtLogin(statisticsStore.preferences.get().launchAtLogin);
+    } catch (error) {
+      console.warn('无法应用开机启动设置。', error);
+      statisticsStore.preferences.update({ launchAtLogin: false });
+    }
     createWindow();
     tray = new Tray(nativeImage.createFromDataURL(TRAY_ICON));
     updateTray();
+    if (!statisticsStore.preferences.get().onboardingCompleted)
+      setImmediate(() => createStatisticsWindow());
     tray.on('double-click', () => {
       petWindow?.show();
     });

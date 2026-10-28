@@ -5,6 +5,7 @@ import { CraftingService } from '../../features/inventory/crafting-service';
 import { ToolRegistryService } from '../../tools/tool-registry';
 import { SedentaryService } from '../../tools/sedentary/sedentary-service';
 import { SummaryService } from '../../tools/summary/summary-service';
+import { AppPreferencesService } from '../settings/app-preferences-service';
 import { grantLevelReward } from '../rewards/rewards';
 import {
   LEVEL_REWARDS,
@@ -29,7 +30,7 @@ export class StatisticsStore {
     this.db.exec('PRAGMA journal_mode = WAL; PRAGMA busy_timeout = 5000;');
     const version = (this.db.prepare('PRAGMA user_version').get() as { user_version: number })
       .user_version;
-    if (version > 13) throw new Error('统计数据库版本高于当前应用支持的版本');
+    if (version > 14) throw new Error('统计数据库版本高于当前应用支持的版本');
     if (version === 0)
       this.db.exec(`BEGIN; CREATE TABLE daily_statistics (
       date TEXT PRIMARY KEY, keyboard_count INTEGER NOT NULL CHECK(keyboard_count >= 0),
@@ -111,6 +112,13 @@ export class StatisticsStore {
       this.db.exec(
         `BEGIN; ALTER TABLE growth_daily ADD COLUMN focus_experience INTEGER NOT NULL DEFAULT 0 CHECK(focus_experience >= 0); PRAGMA user_version = 13; COMMIT;`,
       );
+    if (version < 14)
+      this.db.exec(
+        `BEGIN;
+        CREATE TABLE app_preferences (id INTEGER PRIMARY KEY CHECK(id = 1), animations_enabled INTEGER NOT NULL CHECK(animations_enabled IN (0, 1)), onboarding_completed INTEGER NOT NULL CHECK(onboarding_completed IN (0, 1)), launch_at_login INTEGER NOT NULL CHECK(launch_at_login IN (0, 1)));
+        INSERT INTO app_preferences VALUES (1, 1, 0, 0);
+        PRAGMA user_version = 14; COMMIT;`,
+      );
   }
   get notes(): NotesService {
     return new NotesService(this.db);
@@ -132,6 +140,9 @@ export class StatisticsStore {
   }
   get summary(): SummaryService {
     return new SummaryService(this.db);
+  }
+  get preferences(): AppPreferencesService {
+    return new AppPreferencesService(this.db);
   }
   growth(): GrowthSnapshot {
     const state = this.db
@@ -272,6 +283,36 @@ export class StatisticsStore {
   }
   clear(): void {
     this.db.exec('DELETE FROM daily_statistics');
+  }
+  resetUserData(): void {
+    this.db.exec('BEGIN IMMEDIATE');
+    try {
+      this.db.exec(`
+        DELETE FROM daily_statistics;
+        DELETE FROM growth_daily;
+        DELETE FROM growth_transactions;
+        DELETE FROM level_rewards;
+        DELETE FROM reward_events;
+        DELETE FROM granted_rewards;
+        DELETE FROM inventory;
+        DELETE FROM unlocks;
+        DELETE FROM crafting_transactions;
+        DELETE FROM focus_sessions;
+        DELETE FROM notes;
+        DELETE FROM tool_settings;
+        UPDATE growth_state SET level = 1, experience = 0, total_experience = 0, keyboard_remainder = 0, mouse_remainder = 0 WHERE id = 1;
+        UPDATE wallet SET balance = 0 WHERE id = 1;
+        UPDATE appearance SET character = 'cat', scene = 'transparent', head = NULL, neck = NULL WHERE id = 1;
+        UPDATE focus_timer SET status = 'idle', kind = 'focus', duration_ms = 1500000, remaining_ms = 0, deadline = NULL, completed_sessions = 0, focus_ms = 0 WHERE id = 1;
+        UPDATE focus_preferences SET sound_enabled = 1 WHERE id = 1;
+        UPDATE sedentary_state SET interval_minutes = 60, inactivity_reset_minutes = 5, quiet_start = NULL, quiet_end = NULL, last_activity_at = NULL, active_since = NULL, last_reminded_at = NULL, snoozed_until = NULL WHERE id = 1;
+        UPDATE app_preferences SET animations_enabled = 1, onboarding_completed = 0, launch_at_login = 0 WHERE id = 1;
+      `);
+      this.db.exec('COMMIT');
+    } catch (error) {
+      this.db.exec('ROLLBACK');
+      throw error;
+    }
   }
   close(): void {
     this.db.close();

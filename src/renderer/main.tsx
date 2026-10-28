@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client';
 import { App } from './App';
 import { StatisticsPage } from './statistics/StatisticsPage';
 import { NoteWindow } from './notes/NoteWindow';
+import { ErrorBoundary } from './ErrorBoundary';
 import './styles.css';
 
 const root = document.getElementById('root');
@@ -14,12 +15,14 @@ const noteId = Number(parameters.get('noteId'));
 
 createRoot(root).render(
   <StrictMode>
-    {view === 'statistics' ? (
-      <StatisticsPage />
-    ) : view === 'note' && Number.isSafeInteger(noteId) && noteId > 0 ? (
-      <NoteWindow id={noteId} />
-    ) : (
-      <App />
-    )}
+    <ErrorBoundary>
+      {view === 'statistics' ? (
+        <StatisticsPage />
+      ) : view === 'note' && Number.isSafeInteger(noteId) && noteId > 0 ? (
+        <NoteWindow id={noteId} />
+      ) : (
+        <App />
+      )}
+    </ErrorBoundary>
   </StrictMode>,
 );

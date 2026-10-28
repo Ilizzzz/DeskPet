@@ -5,6 +5,7 @@ import type { StatisticsSnapshot } from './statistics';
 import type { ToolId, ToolState } from './tool';
 import type { SedentarySettings, SedentarySnapshot } from './sedentary';
 import type { DailySummary } from './summary';
+import type { AppPreferenceChange, AppSettingsSnapshot } from './settings';
 export interface DesktopApi {
   readonly platform: NodeJS.Platform;
   openDashboard(): Promise<void>;
@@ -30,6 +31,10 @@ export interface DesktopApi {
   snoozeSedentary(minutes: number): Promise<SedentarySnapshot>;
   resetSedentary(): Promise<SedentarySnapshot>;
   getDailySummary(): Promise<DailySummary>;
+  getAppSettings(): Promise<AppSettingsSnapshot>;
+  updateAppPreference(change: AppPreferenceChange): Promise<AppSettingsSnapshot>;
+  setInputTracking(enabled: boolean): Promise<AppSettingsSnapshot>;
+  resetAllData(): Promise<boolean>;
   getStatistics(): Promise<StatisticsSnapshot>;
   clearStatistics(): Promise<boolean>;
   exportStatistics(): Promise<boolean>;

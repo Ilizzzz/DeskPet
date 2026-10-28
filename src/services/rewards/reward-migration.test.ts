@@ -13,7 +13,7 @@ describe('reward migration', () => {
       store.close();
       const db = new DatabaseSync(file);
       db.exec(
-        "INSERT INTO level_rewards VALUES (2, 'hat_blue'); INSERT INTO level_rewards VALUES (3, 'currency_50'); DELETE FROM granted_rewards; DELETE FROM inventory; UPDATE wallet SET balance = 0; DROP TABLE appearance; DROP TABLE focus_timer; DROP TABLE notes; DROP TABLE granted_rewards; DROP TABLE inventory; DROP TABLE wallet; DROP TABLE unlocks; DROP TABLE crafting_transactions; DROP TABLE tool_settings; DROP TABLE sedentary_state; DROP TABLE focus_sessions; DROP TABLE focus_preferences; DROP TABLE reward_events; ALTER TABLE daily_statistics DROP COLUMN active_seconds; ALTER TABLE growth_daily DROP COLUMN focus_experience; PRAGMA user_version = 2;",
+        "INSERT INTO level_rewards VALUES (2, 'hat_blue'); INSERT INTO level_rewards VALUES (3, 'currency_50'); DELETE FROM granted_rewards; DELETE FROM inventory; UPDATE wallet SET balance = 0; DROP TABLE appearance; DROP TABLE focus_timer; DROP TABLE notes; DROP TABLE granted_rewards; DROP TABLE inventory; DROP TABLE wallet; DROP TABLE unlocks; DROP TABLE crafting_transactions; DROP TABLE tool_settings; DROP TABLE sedentary_state; DROP TABLE focus_sessions; DROP TABLE focus_preferences; DROP TABLE reward_events; DROP TABLE app_preferences; ALTER TABLE daily_statistics DROP COLUMN active_seconds; ALTER TABLE growth_daily DROP COLUMN focus_experience; PRAGMA user_version = 2;",
       );
       db.close();
       store = new StatisticsStore(file);

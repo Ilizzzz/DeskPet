@@ -33,7 +33,8 @@ export function SedentaryPanel() {
     }
   }
   return (
-    <section aria-label="久坐提醒">
+    <section className="content-card tool-card" aria-label="久坐提醒">
+      <span className="eyebrow">WELLBEING</span>
       <h2>久坐提醒</h2>
       <p>本轮连续活动约 {state?.continuousMinutes ?? 0} 分钟；离开后会自动重置。</p>
       <label>

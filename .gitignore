@@ -1,6 +1,7 @@
 node_modules/
 .vite/
 out/
+build/
 coverage/
 *.log
 deskpet-forge-template/

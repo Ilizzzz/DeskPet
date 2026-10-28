@@ -7,8 +7,12 @@
   "author": "DeskPet contributors",
   "main": ".vite/build/main.cjs",
   "scripts": {
+    "generate:assets": "node scripts/generate-app-icon.mjs",
+    "prestart": "npm run generate:assets",
     "start": "electron-forge start",
+    "prepackage": "npm run generate:assets",
     "package": "electron-forge package",
+    "premake": "npm run generate:assets",
     "make": "electron-forge make",
     "lint": "eslint .",
     "format": "prettier --write .",

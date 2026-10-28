@@ -18,6 +18,7 @@ describe('preload bridge', () => {
       'createNote',
       'deleteNote',
       'exportStatistics',
+      'getAppSettings',
       'getAppearance',
       'getDailySummary',
       'getFocus',
@@ -30,15 +31,18 @@ describe('preload bridge', () => {
       'openNote',
       'pauseFocus',
       'platform',
+      'resetAllData',
       'resetSedentary',
       'resumeFocus',
       'saveNote',
       'setAppearance',
       'setFocusSound',
+      'setInputTracking',
       'setToolEnabled',
       'snoozeSedentary',
       'startFocus',
       'stopFocus',
+      'updateAppPreference',
     ]);
     api.getStatistics();
     api.clearStatistics();

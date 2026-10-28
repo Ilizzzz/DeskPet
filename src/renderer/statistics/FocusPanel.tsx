@@ -26,7 +26,8 @@ export function FocusPanel() {
   }
   const seconds = Math.ceil((timer?.remainingMs ?? 0) / 1000);
   return (
-    <section aria-label="番茄钟">
+    <section className="content-card tool-card" aria-label="番茄钟">
+      <span className="eyebrow">FOCUS</span>
       <h2>番茄钟</h2>
       {error && <p role="alert">{error}</p>}
       <p>

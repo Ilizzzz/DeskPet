@@ -1,10 +1,25 @@
-import { app, BrowserWindow, Menu, nativeImage, screen, Tray } from 'electron';
+import {
+  app,
+  BrowserWindow,
+  dialog,
+  globalShortcut,
+  Menu,
+  nativeImage,
+  powerMonitor,
+  screen,
+  Tray,
+} from 'electron';
 import fs from 'node:fs';
 import path from 'node:path';
 import started from 'electron-squirrel-startup';
 import { readPosition, restorePosition } from './window-position';
 import { TRAY_ICON } from './tray-icon';
 import { isInsidePet } from './pet-hit-test';
+import { InputMonitor } from '../services/input-monitor/input-monitor';
+import {
+  readInputPreferences,
+  writeInputPreferences,
+} from '../services/input-monitor/input-preferences';
 
 const SIZE = { width: 180, height: 180 };
 let petWindow: BrowserWindow | undefined;
@@ -13,6 +28,49 @@ let quitting = false;
 let clickThrough = false;
 let alwaysOnTop = true;
 let ignoringMouse = true;
+let inputPreferences = { consentGiven: false, enabled: false };
+let systemSuspended = false;
+const inputMonitor = new InputMonitor(() => updateTray());
+
+function inputPreferencesPath(): string {
+  return path.join(app.getPath('userData'), 'input-preferences.json');
+}
+
+async function setInputEnabled(enabled: boolean): Promise<void> {
+  if (enabled && !inputPreferences.consentGiven) {
+    const response = dialog.showMessageBoxSync({
+      type: 'info',
+      title: '启用键鼠次数统计',
+      message: 'DeskPet 将监听全局键盘按下和鼠标点击。',
+      detail:
+        '只汇总次数；不保存按键内容、输入顺序、鼠标位置或轨迹。可随时从托盘或 Ctrl+Alt+Shift+P 暂停。当前阶段的计数仅保留在本次运行中。',
+      buttons: ['启用统计', '保持暂停'],
+      defaultId: 1,
+      cancelId: 1,
+      noLink: true,
+    });
+    if (response !== 0) return;
+  }
+  const next = { consentGiven: inputPreferences.consentGiven || enabled, enabled };
+  try {
+    // 先保存用户选择；写入失败时不启用全局监听。
+    writeInputPreferences(inputPreferencesPath(), next);
+    inputPreferences = next;
+    if (enabled && !systemSuspended) await inputMonitor.start();
+    else inputMonitor.stop();
+  } catch (error) {
+    inputMonitor.stop();
+    inputPreferences = { ...inputPreferences, enabled: false };
+    try {
+      writeInputPreferences(inputPreferencesPath(), inputPreferences);
+    } catch (saveError) {
+      console.error('无法保存监听暂停状态。', saveError);
+    }
+    console.error('键鼠监听不可用。', error);
+    dialog.showErrorBox('键鼠监听不可用', '监听未启动。请检查安装包中的原生模块或系统权限。');
+  }
+  updateTray();
+}
 
 function positionPath(): string {
   return path.join(app.getPath('userData'), 'window-position.json');
@@ -39,8 +97,22 @@ function savePosition(window: BrowserWindow): void {
   }
 }
 function updateTray(): void {
+  const status = inputMonitor.isRunning ? '统计中' : '已暂停';
+  tray?.setToolTip(`DeskPet · ${status}`);
   tray?.setContextMenu(
     Menu.buildFromTemplate([
+      { label: `键鼠统计：${status}`, enabled: false },
+      {
+        label: `本次：键盘 ${inputMonitor.totals.keyboardCount} / 鼠标 ${inputMonitor.totals.mouseCount}`,
+        enabled: false,
+      },
+      {
+        label: inputPreferences.enabled ? '暂停统计' : '启用统计',
+        click: () => {
+          void setInputEnabled(!inputPreferences.enabled);
+        },
+      },
+      { type: 'separator' },
       {
         label: '显示桌宠',
         click: () => {
@@ -140,12 +212,51 @@ else {
     quitting = true;
   });
   void app.whenReady().then(() => {
+    if (process.argv.includes('--input-hook-smoke-test')) {
+      void import('uiohook-napi')
+        .then(() => {
+          app.quit();
+        })
+        .catch((error: unknown) => {
+          console.error('原生监听模块验证失败。', error);
+          app.exit(1);
+        });
+      return;
+    }
+    inputPreferences = readInputPreferences(inputPreferencesPath());
     createWindow();
     tray = new Tray(nativeImage.createFromDataURL(TRAY_ICON));
-    tray.setToolTip('DeskPet');
     updateTray();
     tray.on('double-click', () => {
       petWindow?.show();
     });
+    powerMonitor.on('lock-screen', () => {
+      systemSuspended = true;
+      inputMonitor.stop();
+      updateTray();
+    });
+    powerMonitor.on('suspend', () => {
+      systemSuspended = true;
+      inputMonitor.stop();
+      updateTray();
+    });
+    const resume = () => {
+      systemSuspended = false;
+      if (inputPreferences.enabled) void setInputEnabled(true);
+    };
+    powerMonitor.on('unlock-screen', resume);
+    powerMonitor.on('resume', resume);
+    const shortcut = 'Control+Alt+Shift+P';
+    if (
+      !globalShortcut.register(shortcut, () => {
+        void setInputEnabled(!inputPreferences.enabled);
+      })
+    )
+      console.warn('监听快捷键注册失败。');
+    if (inputPreferences.enabled) void setInputEnabled(true);
   });
 }
+app.on('before-quit', () => {
+  inputMonitor.stop();
+  globalShortcut.unregisterAll();
+});

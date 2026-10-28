@@ -1,0 +1,6 @@
+node_modules
+.vite
+out
+deskpet-forge-template
+package-lock.json
+DeskPet.md

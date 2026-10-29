@@ -159,12 +159,20 @@
   animation: companion-level-up 0.6s ease-in-out 5;
 }
 
-.companion-state-keyboard {
-  animation: companion-keyboard 0.28s ease-in-out 3;
+.companion-state-keyboard.companion-reaction-0 {
+  animation: companion-keyboard-even 0.26s ease-in-out 2;
 }
 
-.companion-state-mouse {
-  animation: companion-mouse 0.32s ease-in-out 2;
+.companion-state-keyboard.companion-reaction-1 {
+  animation: companion-keyboard-odd 0.26s ease-in-out 2;
+}
+
+.companion-state-mouse.companion-reaction-0 {
+  animation: companion-mouse-even 0.26s ease-in-out 2;
+}
+
+.companion-state-mouse.companion-reaction-1 {
+  animation: companion-mouse-odd 0.26s ease-in-out 2;
 }
 
 .companion-state-drop {
@@ -230,15 +238,39 @@
   }
 }
 
-@keyframes companion-keyboard {
-  50% {
-    transform: translateY(2px) scaleX(1.025);
+@keyframes companion-keyboard-even {
+  35% {
+    transform: translateY(6px) scaleX(1.06) scaleY(0.94);
+  }
+  75% {
+    transform: translateY(-4px) rotate(-2deg);
   }
 }
 
-@keyframes companion-mouse {
-  50% {
-    transform: rotate(3deg) translateY(-2px);
+@keyframes companion-keyboard-odd {
+  35% {
+    transform: translateY(6px) scaleX(1.06) scaleY(0.94);
+  }
+  75% {
+    transform: translateY(-4px) rotate(2deg);
+  }
+}
+
+@keyframes companion-mouse-even {
+  35% {
+    transform: translateX(7px) translateY(-3px) rotate(7deg) scale(1.03);
+  }
+  75% {
+    transform: translateX(-3px) rotate(-4deg);
+  }
+}
+
+@keyframes companion-mouse-odd {
+  35% {
+    transform: translateX(-7px) translateY(-3px) rotate(-7deg) scale(1.03);
+  }
+  75% {
+    transform: translateX(3px) rotate(4deg);
   }
 }
 

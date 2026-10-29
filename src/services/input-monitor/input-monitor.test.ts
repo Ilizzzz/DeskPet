@@ -23,11 +23,14 @@ describe('InputMonitor', () => {
   it('starts and stops the native hook and flushes only aggregate counts', async () => {
     vi.useFakeTimers();
     const batches = vi.fn();
-    const monitor = new InputMonitor(batches);
+    const activities = vi.fn();
+    const monitor = new InputMonitor(batches, activities);
     await monitor.start();
     callbacks.get('keydown')?.({ keycode: 42 });
     callbacks.get('keydown')?.({ keycode: 42 });
     callbacks.get('mousedown')?.({ keycode: 0 });
+    expect(activities.mock.calls).toEqual([['keyboard'], ['mouse']]);
+    expect(batches).not.toHaveBeenCalled();
     vi.advanceTimersByTime(5000);
     expect(batches).toHaveBeenCalledOnce();
     expect(batches.mock.calls[0][0]).toMatchObject({ keyboardCount: 1, mouseCount: 1 });

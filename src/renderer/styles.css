@@ -1483,6 +1483,141 @@ button:disabled {
   text-align: center;
 }
 
+.accessory-adjuster {
+  display: grid;
+  gap: 12px;
+  max-width: 620px;
+  margin: 4px auto 0;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: #fffaf6;
+}
+
+.accessory-adjuster-head,
+.adjustment-controls,
+.scale-control,
+.adjustment-values {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.accessory-adjuster-head {
+  justify-content: space-between;
+}
+
+.accessory-adjuster-head strong,
+.accessory-adjuster-head small {
+  display: block;
+}
+
+.accessory-adjuster-head small,
+.adjustment-empty {
+  margin: 3px 0 0;
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.accessory-adjuster button {
+  border: 1px solid #e4cfc2;
+  border-radius: 9px;
+  color: #764f40;
+  background: #fff;
+  cursor: pointer;
+}
+
+.accessory-adjuster button:disabled {
+  cursor: default;
+  opacity: 0.45;
+}
+
+.adjustment-item-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.adjustment-item-tabs button {
+  padding: 6px 9px;
+  font-size: 11px;
+}
+
+.adjustment-item-tabs button.selected {
+  border-color: var(--coral);
+  color: var(--coral-dark);
+  background: #fff0e8;
+}
+
+.adjustment-controls {
+  flex-wrap: wrap;
+  justify-content: center;
+  padding-top: 2px;
+}
+
+.position-pad {
+  display: grid;
+  grid-template-columns: repeat(3, 32px);
+  grid-template-rows: repeat(3, 30px);
+  gap: 4px;
+}
+
+.position-pad button {
+  padding: 0;
+  font-size: 16px;
+}
+
+.position-pad button:nth-of-type(1) {
+  grid-column: 2;
+}
+
+.position-pad button:nth-of-type(2) {
+  grid-row: 2;
+  grid-column: 1;
+}
+
+.position-pad span {
+  display: grid;
+  grid-row: 2;
+  grid-column: 2;
+  place-items: center;
+  color: var(--subtle);
+  font-size: 10px;
+}
+
+.position-pad button:nth-of-type(3) {
+  grid-row: 2;
+  grid-column: 3;
+}
+
+.position-pad button:nth-of-type(4) {
+  grid-row: 3;
+  grid-column: 2;
+}
+
+.adjustment-values {
+  min-width: 96px;
+  flex-direction: column;
+  gap: 4px;
+  align-items: flex-start;
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.scale-control {
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: #f7eee8;
+  font-size: 12px;
+}
+
+.scale-control button {
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  font-size: 17px;
+}
+
 .subsection + .subsection {
   margin-top: 20px;
   padding-top: 18px;

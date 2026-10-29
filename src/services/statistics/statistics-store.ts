@@ -33,7 +33,7 @@ import {
 } from '../../shared/types/statistics';
 
 /** 当前数据库结构版本；升级时必须追加迁移而不重建用户数据库。 */
-const SCHEMA_VERSION = 16;
+const SCHEMA_VERSION = 17;
 
 export class StatisticsStore {
   private readonly db: DatabaseSync;
@@ -134,7 +134,23 @@ export class StatisticsStore {
       );
     if (version < 15) this.migrateAppearanceAndFeatures();
     if (version < 16) this.migrateVersion2(isNewDatabase);
+    if (version < 17) this.migrateItemAdjustments();
     this.initializeProgression();
+  }
+
+  /** 17 版：按“伙伴 + 饰品”保存用户微调，避免一套偏移影响其他伙伴。 */
+  private migrateItemAdjustments(): void {
+    this.db.exec(`BEGIN;
+      CREATE TABLE item_adjustments (
+        character_id TEXT NOT NULL,
+        item_id TEXT NOT NULL,
+        offset_x INTEGER NOT NULL DEFAULT 0 CHECK(offset_x BETWEEN -128 AND 128),
+        offset_y INTEGER NOT NULL DEFAULT 0 CHECK(offset_y BETWEEN -128 AND 128),
+        scale_percent INTEGER NOT NULL DEFAULT 100 CHECK(scale_percent BETWEEN 50 AND 150),
+        PRIMARY KEY(character_id, item_id)
+      );
+      PRAGMA user_version = 17;
+    COMMIT;`);
   }
 
   /** Version 2：键盘掉落、发现/心愿、统一货币记录与桌宠显示偏好。 */
@@ -442,6 +458,7 @@ export class StatisticsStore {
         DELETE FROM drop_events;
         DELETE FROM item_discoveries;
         DELETE FROM economy_transactions;
+        DELETE FROM item_adjustments;
         DELETE FROM focus_sessions;
         DELETE FROM notes;
         DELETE FROM tool_settings;

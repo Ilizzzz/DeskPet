@@ -13,6 +13,15 @@ export interface EquippedItems {
   back: string | null;
 }
 
+/** 用户对单个伙伴上的单件饰品所做的微调；坐标使用 256×256 角色画布单位。 */
+export interface ItemAdjustment {
+  characterId: string;
+  itemId: string;
+  offsetX: number;
+  offsetY: number;
+  scalePercent: number;
+}
+
 export interface Appearance {
   level: number;
   character: string;
@@ -25,6 +34,7 @@ export interface Appearance {
   discoveredItemIds: string[];
   wishlistItemId: string | null;
   dropProgress: import('./economy').DropProgress;
+  itemAdjustments: ItemAdjustment[];
 }
 
 export interface AppearanceChange {
@@ -32,6 +42,8 @@ export interface AppearanceChange {
   scene?: string;
   /** 一次只修改一个槽位，避免多个槽位出现互相矛盾的写入。 */
   equipped?: { slot: ItemSlot; itemId: string | null };
+  /** 只允许调整当前伙伴正在佩戴的饰品；默认值会删除对应覆盖配置。 */
+  adjustment?: Pick<ItemAdjustment, 'itemId' | 'offsetX' | 'offsetY' | 'scalePercent'>;
 }
 
 export const RARITY_LABELS: Readonly<Record<ItemRarity, string>> = {

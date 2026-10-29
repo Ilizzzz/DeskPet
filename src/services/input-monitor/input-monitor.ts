@@ -2,6 +2,7 @@ import { InputCounter, type InputCounts } from './input-counter';
 import type { DailyStatistics } from '../../shared/types/statistics';
 
 type Hook = (typeof import('uiohook-napi'))['uIOhook'];
+export type InputActivity = 'keyboard' | 'mouse';
 
 export class InputMonitor {
   private readonly counter = new InputCounter();
@@ -13,7 +14,10 @@ export class InputMonitor {
   private totalKeyboard = 0;
   private totalMouse = 0;
 
-  constructor(private readonly onBatch: (counts: InputCounts, days: DailyStatistics[]) => void) {}
+  constructor(
+    private readonly onBatch: (counts: InputCounts, days: DailyStatistics[]) => void,
+    private readonly onActivity: (activity: InputActivity) => void = () => undefined,
+  ) {}
 
   async start(): Promise<void> {
     this.desiredRunning = true;
@@ -22,9 +26,14 @@ export class InputMonitor {
     this.startPromise = (async () => {
       if (!this.hook) {
         const { uIOhook } = await import('uiohook-napi');
-        uIOhook.on('keydown', (event) => this.counter.keyDown(event.keycode));
+        uIOhook.on('keydown', (event) => {
+          if (this.counter.keyDown(event.keycode)) this.onActivity('keyboard');
+        });
         uIOhook.on('keyup', (event) => this.counter.keyUp(event.keycode));
-        uIOhook.on('mousedown', () => this.counter.mouseDown());
+        uIOhook.on('mousedown', () => {
+          this.counter.mouseDown();
+          this.onActivity('mouse');
+        });
         this.hook = uIOhook;
       }
       if (!this.desiredRunning) return;

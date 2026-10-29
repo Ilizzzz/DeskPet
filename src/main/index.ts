@@ -54,35 +54,42 @@ let inputError: string | null = null;
 let systemSuspended = false;
 let petDragging = false;
 let petDragTimer: NodeJS.Timeout | undefined;
-const inputMonitor = new InputMonitor((counts, days) => {
-  pending.push(...days);
-  let drops: import('../shared/types/economy').DropEvent[] = [];
-  try {
-    drops = persistPending();
-  } catch (error) {
-    console.error('无法保存统计数据。', error);
-    dialog.showErrorBox('统计保存失败', '统计数据暂存在内存中，请检查磁盘空间和用户数据目录。');
-    setImmediate(() => {
-      void setInputEnabled(false);
-    });
-  }
-  try {
-    if (
-      counts.keyboardCount + counts.mouseCount > 0 &&
-      statisticsStore?.tools.isEnabled('sedentary')
-    )
-      statisticsStore.sedentary.recordActivity();
-  } catch (error) {
-    console.error('无法更新久坐活动状态。', error);
-  }
-  if (counts.keyboardCount + counts.mouseCount > 0 && petWindow && !petWindow.isDestroyed())
+const inputMonitor = new InputMonitor(
+  (counts, days) => {
+    pending.push(...days);
+    let drops: import('../shared/types/economy').DropEvent[] = [];
+    try {
+      drops = persistPending();
+    } catch (error) {
+      console.error('无法保存统计数据。', error);
+      dialog.showErrorBox('统计保存失败', '统计数据暂存在内存中，请检查磁盘空间和用户数据目录。');
+      setImmediate(() => {
+        void setInputEnabled(false);
+      });
+    }
+    try {
+      if (
+        counts.keyboardCount + counts.mouseCount > 0 &&
+        statisticsStore?.tools.isEnabled('sedentary')
+      )
+        statisticsStore.sedentary.recordActivity();
+    } catch (error) {
+      console.error('无法更新久坐活动状态。', error);
+    }
+    // 即时动作由单次活动脉冲驱动；批次这里只发送掉落，避免每五秒重复播放一次。
+    if (drops.length > 0 && petWindow && !petWindow.isDestroyed())
+      petWindow.webContents.send('pet:activity', { keyboard: 0, mouse: 0, drops });
+    updateTray();
+  },
+  (activity) => {
+    if (!petWindow || petWindow.isDestroyed()) return;
     petWindow.webContents.send('pet:activity', {
-      keyboard: counts.keyboardCount,
-      mouse: counts.mouseCount,
-      drops,
+      keyboard: activity === 'keyboard' ? 1 : 0,
+      mouse: activity === 'mouse' ? 1 : 0,
+      drops: [],
     });
-  updateTray();
-});
+  },
+);
 function persistPending(): import('../shared/types/economy').DropEvent[] {
   if (!statisticsStore) throw new Error('统计数据库不可用');
   const drops: import('../shared/types/economy').DropEvent[] = [];

@@ -1,4 +1,4 @@
-import type { ItemSlot } from '../../shared/types/appearance';
+import type { ItemAdjustment, ItemSlot } from '../../shared/types/appearance';
 
 // 饰品锚点以角色 256×256 原始画布为坐标，渲染时按显示尺寸等比缩放。
 // V2 使用全角色合成预览逐个校准；基础锚点负责角色差异，ITEM_PLACEMENTS 负责单件造型差异。
@@ -115,16 +115,30 @@ export function anchorsFor(characterId: string): CharacterAnchors {
 }
 
 /** 组合角色基础锚点与单件装扮微调，桌宠和控制中心预览共用。 */
-export function resolvedAnchor(characterId: string, slot: ItemSlot, itemId: string): ItemAnchor {
+export function resolvedAnchor(
+  characterId: string,
+  slot: ItemSlot,
+  itemId: string,
+  adjustment?: ItemAdjustment,
+): ItemAnchor {
   const base = anchorsFor(characterId)[slot];
   const placement = ITEM_PLACEMENTS[itemId];
-  if (!placement) return base;
-  const width = base.width * (placement.scale ?? 1);
-  const centerOffset = (base.width - width) / 2;
-  return {
+  const placedWidth = base.width * (placement?.scale ?? 1);
+  const placementCenterOffset = (base.width - placedWidth) / 2;
+  const placed: ItemAnchor = {
     ...base,
-    left: base.left + centerOffset + base.width * (placement.x ?? 0),
-    top: base.top + centerOffset + base.width * (placement.y ?? 0),
+    left: base.left + placementCenterOffset + base.width * (placement?.x ?? 0),
+    top: base.top + placementCenterOffset + base.width * (placement?.y ?? 0),
+    width: placedWidth,
+  };
+  if (!adjustment || adjustment.characterId !== characterId || adjustment.itemId !== itemId)
+    return placed;
+  const width = placed.width * (adjustment.scalePercent / 100);
+  const adjustmentCenterOffset = (placed.width - width) / 2;
+  return {
+    ...placed,
+    left: placed.left + adjustment.offsetX + adjustmentCenterOffset,
+    top: placed.top + adjustment.offsetY + adjustmentCenterOffset,
     width,
   };
 }

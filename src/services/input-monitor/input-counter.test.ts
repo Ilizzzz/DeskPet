@@ -4,8 +4,8 @@ import { InputCounter } from './input-counter';
 describe('InputCounter', () => {
   it('counts one physical key press and every mouse press without retaining event details', () => {
     const counter = new InputCounter(0);
-    counter.keyDown(30);
-    for (let i = 0; i < 20; i++) counter.keyDown(30);
+    expect(counter.keyDown(30)).toBe(true);
+    for (let i = 0; i < 20; i++) expect(counter.keyDown(30)).toBe(false);
     counter.mouseDown();
     counter.mouseDown();
     counter.keyUp(30);

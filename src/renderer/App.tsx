@@ -97,6 +97,7 @@ export function App() {
   const [animationsEnabled, setAnimationsEnabled] = useState(true);
   const [inputReactionsEnabled, setInputReactionsEnabled] = useState(true);
   const [inputReaction, setInputReaction] = useState<'keyboard' | 'mouse' | null>(null);
+  const [inputReactionTick, setInputReactionTick] = useState(0);
   const [celebratingDrop, setCelebratingDrop] = useState(false);
   const [edge, setEdge] = useState<'free' | 'bottom' | 'left' | 'right'>('free');
   const [speech, setSpeech] = useState<string>();
@@ -241,8 +242,9 @@ export function App() {
         )
           return;
         setInputReaction(activity.keyboard >= activity.mouse ? 'keyboard' : 'mouse');
+        setInputReactionTick((current) => current + 1);
         if (inputTimer.current) clearTimeout(inputTimer.current);
-        inputTimer.current = setTimeout(() => setInputReaction(null), 900);
+        inputTimer.current = setTimeout(() => setInputReaction(null), 520);
       }),
     [],
   );
@@ -279,8 +281,17 @@ export function App() {
       const itemId = appearance.equipped[slot];
       if (!itemId) return [];
       const item = ITEMS.find((entry) => entry.id === itemId && entry.slot === slot);
+      const adjustment = appearance.itemAdjustments.find(
+        (entry) => entry.characterId === appearance.character && entry.itemId === itemId,
+      );
       return item
-        ? [{ slot, item, anchor: resolvedAnchor(appearance.character, slot, item.id) }]
+        ? [
+            {
+              slot,
+              item,
+              anchor: resolvedAnchor(appearance.character, slot, item.id, adjustment),
+            },
+          ]
         : [];
     });
   }, [appearance]);
@@ -419,7 +430,9 @@ export function App() {
         />
       ))}
       <div
-        className={`companion-root companion-state-${petState}`}
+        className={`companion-root companion-state-${petState}${
+          inputReaction ? ` companion-reaction-${inputReactionTick % 2}` : ''
+        }`}
         role="img"
         aria-label={`${petName}，拖动可移动；双击打开控制中心，右键打开菜单`}
         onPointerDown={handlePointerDown}

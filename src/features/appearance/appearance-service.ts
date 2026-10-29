@@ -1,5 +1,10 @@
 import type { DatabaseSync } from 'node:sqlite';
-import type { Appearance, EquippedItems, ItemSlot } from '../../shared/types/appearance';
+import type {
+  Appearance,
+  EquippedItems,
+  ItemAdjustment,
+  ItemSlot,
+} from '../../shared/types/appearance';
 import { ITEM_SLOTS } from '../../shared/types/appearance';
 import { SCENES, characterById, itemById } from '../../data/catalogs/appearance';
 import { KEYBOARD_COUNT_PER_DROP } from '../../data/catalogs/economy';
@@ -12,7 +17,14 @@ interface AppearanceRow extends EquippedItems {
 type ParsedChange =
   | { kind: 'character'; id: string }
   | { kind: 'scene'; id: string }
-  | { kind: 'equipped'; slot: ItemSlot; itemId: string | null };
+  | { kind: 'equipped'; slot: ItemSlot; itemId: string | null }
+  | {
+      kind: 'adjustment';
+      itemId: string;
+      offsetX: number;
+      offsetY: number;
+      scalePercent: number;
+    };
 
 export class AppearanceService {
   constructor(private readonly db: DatabaseSync) {}
@@ -52,6 +64,13 @@ export class AppearanceService {
         'SELECT id, item_id AS itemId, created_at AS createdAt FROM drop_events ORDER BY id DESC LIMIT 1',
       )
       .get() as unknown as import('../../shared/types/economy').DropEvent | undefined;
+    const itemAdjustments = this.db
+      .prepare(
+        `SELECT character_id AS characterId, item_id AS itemId, offset_x AS offsetX,
+          offset_y AS offsetY, scale_percent AS scalePercent
+        FROM item_adjustments ORDER BY character_id, item_id`,
+      )
+      .all() as unknown as ItemAdjustment[];
     return {
       level: growth.level,
       character: row.character,
@@ -74,6 +93,7 @@ export class AppearanceService {
         keyboardPerDrop: KEYBOARD_COUNT_PER_DROP,
         latestDrop: latestDrop ?? null,
       },
+      itemAdjustments,
     };
   }
 
@@ -117,6 +137,28 @@ export class AppearanceService {
         this.db.prepare(`UPDATE appearance SET ${change.slot} = ? WHERE id = 1`).run(change.itemId);
         break;
       }
+      case 'adjustment': {
+        const item = itemById(change.itemId);
+        if (!item || current.equipped[item.slot] !== item.id)
+          throw new Error('只能调整当前佩戴的装扮');
+        if (change.offsetX === 0 && change.offsetY === 0 && change.scalePercent === 100) {
+          this.db
+            .prepare('DELETE FROM item_adjustments WHERE character_id = ? AND item_id = ?')
+            .run(current.character, item.id);
+        } else {
+          this.db
+            .prepare(
+              `INSERT INTO item_adjustments(character_id, item_id, offset_x, offset_y, scale_percent)
+              VALUES (?, ?, ?, ?, ?)
+              ON CONFLICT(character_id, item_id) DO UPDATE SET
+                offset_x = excluded.offset_x,
+                offset_y = excluded.offset_y,
+                scale_percent = excluded.scale_percent`,
+            )
+            .run(current.character, item.id, change.offsetX, change.offsetY, change.scalePercent);
+        }
+        break;
+      }
     }
     return this.get();
   }
@@ -144,6 +186,31 @@ function parseChange(value: unknown): ParsedChange {
       throw new Error('无效外观字段');
     if (itemId !== null && typeof itemId !== 'string') throw new Error('无效外观');
     return { kind: 'equipped', slot: slot as ItemSlot, itemId };
+  }
+  if (key === 'adjustment') {
+    if (!raw || typeof raw !== 'object' || Array.isArray(raw)) throw new Error('无效装扮微调');
+    const adjustment = raw as Record<string, unknown>;
+    if (
+      Object.keys(adjustment).length !== 4 ||
+      typeof adjustment.itemId !== 'string' ||
+      !Number.isInteger(adjustment.offsetX) ||
+      !Number.isInteger(adjustment.offsetY) ||
+      !Number.isInteger(adjustment.scalePercent) ||
+      (adjustment.offsetX as number) < -128 ||
+      (adjustment.offsetX as number) > 128 ||
+      (adjustment.offsetY as number) < -128 ||
+      (adjustment.offsetY as number) > 128 ||
+      (adjustment.scalePercent as number) < 50 ||
+      (adjustment.scalePercent as number) > 150
+    )
+      throw new Error('装扮微调超出范围');
+    return {
+      kind: 'adjustment',
+      itemId: adjustment.itemId,
+      offsetX: adjustment.offsetX as number,
+      offsetY: adjustment.offsetY as number,
+      scalePercent: adjustment.scalePercent as number,
+    };
   }
   throw new Error('无效外观字段');
 }

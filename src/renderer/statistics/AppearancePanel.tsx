@@ -15,6 +15,7 @@ export function AppearancePanel() {
   const appearance = useAppearance();
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
+  const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -25,6 +26,16 @@ export function AppearancePanel() {
       active = false;
     };
   }, []);
+
+  useEffect(() => {
+    if (!appearance) return;
+    const equippedIds = ITEM_SLOTS.flatMap((slot) =>
+      appearance.equipped[slot] ? [appearance.equipped[slot]] : [],
+    );
+    setSelectedItemId((current) =>
+      current && equippedIds.includes(current) ? current : (equippedIds[0] ?? null),
+    );
+  }, [appearance]);
 
   async function change(next: AppearanceChange) {
     setBusy(true);
@@ -64,6 +75,34 @@ export function AppearancePanel() {
       .map((entry) => [entry.itemId, entry.quantity]),
   );
   const equippedCount = ITEM_SLOTS.filter((slot) => appearance.equipped[slot]).length;
+  const equippedItems = ITEM_SLOTS.flatMap((slot) => {
+    const itemId = appearance.equipped[slot];
+    const item = itemId ? ITEMS.find((entry) => entry.id === itemId) : undefined;
+    return item ? [{ slot, item }] : [];
+  });
+  const selectedItem = equippedItems.find((entry) => entry.item.id === selectedItemId);
+  const savedAdjustment = appearance.itemAdjustments.find(
+    (entry) => entry.characterId === appearance.character && entry.itemId === selectedItem?.item.id,
+  );
+  const adjustment = savedAdjustment ?? {
+    characterId: appearance.character,
+    itemId: selectedItem?.item.id ?? '',
+    offsetX: 0,
+    offsetY: 0,
+    scalePercent: 100,
+  };
+
+  function updateAdjustment(next: { offsetX?: number; offsetY?: number; scalePercent?: number }) {
+    if (!selectedItem) return;
+    void change({
+      adjustment: {
+        itemId: selectedItem.item.id,
+        offsetX: Math.max(-128, Math.min(128, next.offsetX ?? adjustment.offsetX)),
+        offsetY: Math.max(-128, Math.min(128, next.offsetY ?? adjustment.offsetY)),
+        scalePercent: Math.max(50, Math.min(150, next.scalePercent ?? adjustment.scalePercent)),
+      },
+    });
+  }
 
   return (
     <div className="appearance-panel">
@@ -77,6 +116,118 @@ export function AppearancePanel() {
           <span className="privacy-chip">已佩戴 {equippedCount} / 5</span>
         </div>
         <PetPreview appearance={appearance} />
+        <div className="accessory-adjuster" aria-label="装饰位置微调">
+          <div className="accessory-adjuster-head">
+            <div>
+              <strong>装饰位置微调</strong>
+              <small>
+                只影响「{CHARACTERS.find((entry) => entry.id === appearance.character)?.name}
+                」上的当前装饰
+              </small>
+            </div>
+            {selectedItem && (
+              <button
+                type="button"
+                disabled={busy || !savedAdjustment}
+                onClick={() => updateAdjustment({ offsetX: 0, offsetY: 0, scalePercent: 100 })}
+              >
+                恢复默认
+              </button>
+            )}
+          </div>
+          {equippedItems.length ? (
+            <>
+              <div className="adjustment-item-tabs" role="group" aria-label="选择要调整的装饰">
+                {equippedItems.map(({ slot, item }) => (
+                  <button
+                    type="button"
+                    key={item.id}
+                    className={selectedItemId === item.id ? 'selected' : ''}
+                    aria-pressed={selectedItemId === item.id}
+                    disabled={busy}
+                    onClick={() => setSelectedItemId(item.id)}
+                  >
+                    {SLOT_LABELS[slot]} · {item.name}
+                  </button>
+                ))}
+              </div>
+              {selectedItem && (
+                <div className="adjustment-controls">
+                  <div className="position-pad" aria-label="移动装饰">
+                    <button
+                      type="button"
+                      aria-label="向上移动"
+                      disabled={busy || adjustment.offsetY <= -128}
+                      onClick={() => updateAdjustment({ offsetY: adjustment.offsetY - 4 })}
+                    >
+                      ↑
+                    </button>
+                    <button
+                      type="button"
+                      aria-label="向左移动"
+                      disabled={busy || adjustment.offsetX <= -128}
+                      onClick={() => updateAdjustment({ offsetX: adjustment.offsetX - 4 })}
+                    >
+                      ←
+                    </button>
+                    <span aria-hidden="true">移动</span>
+                    <button
+                      type="button"
+                      aria-label="向右移动"
+                      disabled={busy || adjustment.offsetX >= 128}
+                      onClick={() => updateAdjustment({ offsetX: adjustment.offsetX + 4 })}
+                    >
+                      →
+                    </button>
+                    <button
+                      type="button"
+                      aria-label="向下移动"
+                      disabled={busy || adjustment.offsetY >= 128}
+                      onClick={() => updateAdjustment({ offsetY: adjustment.offsetY + 4 })}
+                    >
+                      ↓
+                    </button>
+                  </div>
+                  <div className="adjustment-values">
+                    <span>
+                      水平 {adjustment.offsetX > 0 ? '+' : ''}
+                      {adjustment.offsetX}
+                    </span>
+                    <span>
+                      垂直 {adjustment.offsetY > 0 ? '+' : ''}
+                      {adjustment.offsetY}
+                    </span>
+                  </div>
+                  <div className="scale-control" aria-label="调整装饰大小">
+                    <button
+                      type="button"
+                      aria-label="缩小装饰"
+                      disabled={busy || adjustment.scalePercent <= 50}
+                      onClick={() =>
+                        updateAdjustment({ scalePercent: adjustment.scalePercent - 5 })
+                      }
+                    >
+                      −
+                    </button>
+                    <span>大小 {adjustment.scalePercent}%</span>
+                    <button
+                      type="button"
+                      aria-label="放大装饰"
+                      disabled={busy || adjustment.scalePercent >= 150}
+                      onClick={() =>
+                        updateAdjustment({ scalePercent: adjustment.scalePercent + 5 })
+                      }
+                    >
+                      ＋
+                    </button>
+                  </div>
+                </div>
+              )}
+            </>
+          ) : (
+            <p className="adjustment-empty">先佩戴一件装饰，再在这里调整位置和大小。</p>
+          )}
+        </div>
         {error && (
           <p className="inline-error" role="alert">
             {error}

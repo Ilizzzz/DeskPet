@@ -25,21 +25,23 @@ export class InputCounter {
     this.days.set(date, day);
     this.activeDates.add(date);
   }
-  keyDown(keycode: number, now = Date.now()): void {
+  keyDown(keycode: number, now = Date.now()): boolean {
     // 长时间无键盘事件后清除可能漏失释放事件的状态。
     if (this.lastKeyboardEventAt !== undefined && now - this.lastKeyboardEventAt > 120_000)
       this.heldKeys.clear();
     this.lastKeyboardEventAt = now;
-    if (!Number.isSafeInteger(keycode) || this.heldKeys.has(keycode)) return;
+    if (!Number.isSafeInteger(keycode) || this.heldKeys.has(keycode)) return false;
     this.heldKeys.add(keycode);
     this.increment('keyboardCount', now);
+    return true;
   }
   keyUp(keycode: number, now = Date.now()): void {
     this.lastKeyboardEventAt = now;
     this.heldKeys.delete(keycode);
   }
-  mouseDown(now = Date.now()): void {
+  mouseDown(now = Date.now()): boolean {
     this.increment('mouseCount', now);
+    return true;
   }
   resetHeldKeys(): void {
     this.heldKeys.clear();

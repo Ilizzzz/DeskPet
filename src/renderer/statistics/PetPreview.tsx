@@ -25,7 +25,10 @@ export function PetPreview({ appearance }: { appearance: Appearance }) {
   const equipped = ITEM_SLOTS.flatMap((slot) => {
     const item = ITEMS.find((entry) => entry.id === appearance.equipped[slot]);
     if (!item) return [];
-    const anchor = resolvedAnchor(character.id, slot, item.id);
+    const adjustment = appearance.itemAdjustments.find(
+      (entry) => entry.characterId === character.id && entry.itemId === item.id,
+    );
+    const anchor = resolvedAnchor(character.id, slot, item.id, adjustment);
     const transform = [
       anchor.rotate ? `rotate(${anchor.rotate}deg)` : '',
       anchor.flip ? 'scaleX(-1)' : '',

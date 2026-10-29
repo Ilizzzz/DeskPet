@@ -18,6 +18,13 @@ function database(level = 1): DatabaseSync {
     CREATE TABLE input_drop_state(id INTEGER PRIMARY KEY, keyboard_remainder INTEGER NOT NULL);
     INSERT INTO input_drop_state VALUES(1, 120);
     CREATE TABLE drop_events(id INTEGER PRIMARY KEY, item_id TEXT, created_at INTEGER);`);
+  db.exec(`CREATE TABLE item_adjustments(
+    character_id TEXT NOT NULL,
+    item_id TEXT NOT NULL,
+    offset_x INTEGER NOT NULL,
+    offset_y INTEGER NOT NULL,
+    scale_percent INTEGER NOT NULL,
+    PRIMARY KEY(character_id, item_id));`);
   return db;
 }
 
@@ -37,6 +44,7 @@ describe('appearance', () => {
       discoveredItemIds: [],
       wishlistItemId: null,
       dropProgress: { keyboardRemainder: 120, keyboardPerDrop: 1500, latestDrop: null },
+      itemAdjustments: [],
     });
     db.close();
   });
@@ -98,6 +106,53 @@ describe('appearance', () => {
     expect(() => service.update({ equipped: { slot: 'face', itemId: 'unknown' } })).toThrow(
       '无效外观选项',
     );
+    db.close();
+  });
+
+  it('stores accessory adjustments per character and resets only the current pair', () => {
+    const db = database(10);
+    const service = new AppearanceService(db);
+    db.exec("INSERT INTO inventory VALUES('cap_blue', 1); INSERT INTO unlocks VALUES('dog')");
+    service.update({ equipped: { slot: 'head', itemId: 'cap_blue' } });
+    expect(
+      service.update({
+        adjustment: { itemId: 'cap_blue', offsetX: 12, offsetY: -8, scalePercent: 115 },
+      }).itemAdjustments,
+    ).toEqual([
+      { characterId: 'cat', itemId: 'cap_blue', offsetX: 12, offsetY: -8, scalePercent: 115 },
+    ]);
+
+    service.update({ character: 'dog' });
+    expect(
+      service.update({
+        adjustment: { itemId: 'cap_blue', offsetX: -4, offsetY: 6, scalePercent: 90 },
+      }).itemAdjustments,
+    ).toHaveLength(2);
+    expect(
+      service.update({
+        adjustment: { itemId: 'cap_blue', offsetX: 0, offsetY: 0, scalePercent: 100 },
+      }).itemAdjustments,
+    ).toEqual([
+      { characterId: 'cat', itemId: 'cap_blue', offsetX: 12, offsetY: -8, scalePercent: 115 },
+    ]);
+    db.close();
+  });
+
+  it('rejects adjustments for unequipped items and out-of-range values', () => {
+    const db = database(10);
+    const service = new AppearanceService(db);
+    db.exec("INSERT INTO inventory VALUES('cap_blue', 1)");
+    expect(() =>
+      service.update({
+        adjustment: { itemId: 'cap_blue', offsetX: 4, offsetY: 0, scalePercent: 100 },
+      }),
+    ).toThrow('只能调整当前佩戴的装扮');
+    service.update({ equipped: { slot: 'head', itemId: 'cap_blue' } });
+    expect(() =>
+      service.update({
+        adjustment: { itemId: 'cap_blue', offsetX: 129, offsetY: 0, scalePercent: 100 },
+      }),
+    ).toThrow('装扮微调超出范围');
     db.close();
   });
 

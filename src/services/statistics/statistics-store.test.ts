@@ -43,6 +43,10 @@ describe('statistics persistence', () => {
     });
     store.notes.create();
     store.preferences.update({ animationsEnabled: false });
+    store.appearance.update({ equipped: { slot: 'head', itemId: 'cap_blue' } });
+    store.appearance.update({
+      adjustment: { itemId: 'cap_blue', offsetX: 8, offsetY: -4, scalePercent: 110 },
+    });
     store.resetUserData();
     expect(store.snapshot(new Date(2026, 0, 2))).toMatchObject({
       growth: { level: 1, totalExperience: 0 },
@@ -56,6 +60,7 @@ describe('statistics persistence', () => {
       fragments: 0,
       inventory: [{ itemId: 'cap_blue', quantity: 1 }],
       equipped: { head: null, neck: null, face: null, hand: null, back: null },
+      itemAdjustments: [],
     });
     expect(store.preferences.get()).toEqual({
       animationsEnabled: true,
@@ -156,6 +161,7 @@ describe('statistics persistence', () => {
         DROP TABLE item_discoveries;
         DROP TABLE item_wishlist;
         DROP TABLE economy_transactions;
+        DROP TABLE item_adjustments;
         ALTER TABLE app_preferences DROP COLUMN pet_scale;
         ALTER TABLE app_preferences DROP COLUMN edge_snap_enabled;
         ALTER TABLE app_preferences DROP COLUMN input_reactions_enabled;

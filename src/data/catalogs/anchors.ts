@@ -28,6 +28,13 @@ export const ANCHORS: Readonly<Record<string, CharacterAnchors>> = {
     hand: { left: 140, top: 130, width: 75 },
     back: { left: 120, top: 80, width: 120 },
   },
+  math_master: {
+    head: { left: 52, top: -8, width: 152 },
+    neck: { left: 80, top: 176, width: 96 },
+    face: { left: 60, top: 66, width: 136 },
+    hand: { left: 154, top: 178, width: 72 },
+    back: { left: 126, top: 126, width: 126 },
+  },
   dog: {
     head: { left: 55, top: -5, width: 105 },
     neck: { left: 78, top: 105, width: 70 },

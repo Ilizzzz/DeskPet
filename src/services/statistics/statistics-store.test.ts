@@ -59,6 +59,7 @@ describe('statistics persistence', () => {
       balance: 0,
       fragments: 0,
       inventory: [{ itemId: 'cap_blue', quantity: 1 }],
+      unlocks: expect.arrayContaining(['cat', 'math_master']),
       equipped: { head: null, neck: null, face: null, hand: null, back: null },
       itemAdjustments: [],
     });
@@ -178,6 +179,7 @@ describe('statistics persistence', () => {
       expect(appearance).toMatchObject({
         balance: 333,
         fragments: 7,
+        unlocks: expect.arrayContaining(['math_master']),
         equipped: { head: 'hat_top' },
         dropProgress: { keyboardRemainder: 0, latestDrop: null },
       });

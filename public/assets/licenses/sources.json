@@ -1,9 +1,9 @@
 {
-  "source": "Mixed sources: Microsoft Fluent Emoji and project-generated Version 2 art",
+  "source": "Mixed sources: Microsoft Fluent Emoji, project-generated Version 2 art, and a user-provided portrait",
   "repository": "https://github.com/microsoft/fluentui-emoji",
   "license": "Per-asset metadata; Fluent Emoji assets remain MIT licensed",
   "license_file": "public/assets/licenses/fluent-emoji-LICENSE.txt",
-  "author": "Microsoft Corporation and DeskPet contributors",
+  "author": "Microsoft Corporation, DeskPet contributors, and the DeskPet user",
   "download_date": "2026-10-29",
   "attribution": "See each asset entry and docs/design/ASSET_GUIDE.md",
   "assets": [
@@ -69,6 +69,22 @@
       "generation_prompt_group": "v2-anime-character",
       "sha256": "b931c73b98d62edd1f0afed331f20f4c876c5c9eeaacdbd86edcaa793a8cfad4",
       "bytes": 103523,
+      "scene_backdrop_for": null
+    },
+    {
+      "asset_id": "math_master",
+      "category": "character",
+      "emoji_name": null,
+      "local_path": "public/assets/characters/math_master.png",
+      "source_url": null,
+      "author": "DeskPet user",
+      "license": "User-provided asset authorized for use in DeskPet",
+      "download_date": "2026-10-29",
+      "modifications": "Original portrait proportionally fitted onto a 256x256 RGBA canvas without cropping or generative edits",
+      "attribution": "Original portrait provided by the DeskPet user",
+      "generation_prompt_group": null,
+      "sha256": "741c9b94d23e9470da1aad85daf988c64bc7217967122ff07d751d4b3386cf74",
+      "bytes": 86741,
       "scene_backdrop_for": null
     },
     {

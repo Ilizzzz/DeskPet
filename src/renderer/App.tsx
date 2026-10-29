@@ -33,6 +33,7 @@ const SLEEP_DELAY = 5 * 60_000;
 
 const FALLBACK_EMOJI: Readonly<Record<string, string>> = {
   cat: '🐱',
+  math_master: '🎓',
   dog: '🐶',
   rabbit: '🐰',
   penguin: '🐧',

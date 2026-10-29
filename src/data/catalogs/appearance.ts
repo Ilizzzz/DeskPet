@@ -26,9 +26,10 @@ export interface ItemDefinition {
 }
 
 /**
- * 全部角色使用同一套 256×256 透明画布，采用 V2 原创生成的二次元 2D 坐姿立绘。
+ * 全部角色使用同一套 256×256 透明画布。动物伙伴采用 V2 原创二次元 2D 立绘，
+ * 用户提供的真人伙伴保留原图，只做等比适配。
  *
- * 解锁等级刻意拉长到 28 级，保证每次升级都有可见的新伙伴或新装扮。
+ * 解锁等级刻意拉长到 28 级，保证成长过程中持续出现新伙伴或新装扮。
  */
 export const CHARACTERS: readonly CharacterDefinition[] = [
   {
@@ -37,6 +38,13 @@ export const CHARACTERS: readonly CharacterDefinition[] = [
     description: '默认伙伴，好奇又粘人。',
     unlockLevel: 1,
     asset: 'assets/characters/cat.png',
+  },
+  {
+    id: 'math_master',
+    name: '数学硕士',
+    description: '带着冷静与耐心，陪你攻克每一道难题。',
+    unlockLevel: 1,
+    asset: 'assets/characters/math_master.png',
   },
   {
     id: 'dog',

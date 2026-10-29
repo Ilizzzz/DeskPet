@@ -1,8 +1,8 @@
-# Version 2 图像生成与落地说明
+# Version 2 图像生成与原图落地说明
 
-本文记录 DeskPet Version 2 的角色和装扮是怎样生成、拆分、校准与登记的，供后续扩展时
-保持同一画风。生成具有随机性；复用提示词不保证得到完全相同的像素，正式入库前必须重新
-做透明度、穿戴位置和小尺寸可读性检查。
+本文记录 DeskPet Version 2 的动物角色和装扮怎样生成、拆分、校准与登记，也记录用户原图
+角色的无生成式处理流程。生成具有随机性；复用提示词不保证得到完全相同的像素，正式入库
+前必须重新做透明度、穿戴位置和小尺寸可读性检查。
 
 ## 1. 生成方式
 
@@ -27,6 +27,18 @@ areas around the head, neck, face, paws and back.
 `[ANIMAL]` 分别替换为 orange tabby kitten、brown-and-white puppy、white rabbit、navy-and-white
 penguin、orange tiger cub、mint-green turtle、cream-and-brown hedgehog、brown chipmunk。八张图
 分别生成后再统一缩放，不从一张图复制改色。
+
+### 用户原图角色
+
+`math_master` 不使用 ImageGen，也不进行动漫化。处理步骤如下：
+
+1. 将用户提供的原文件逐字节复制到
+   `art_sources/characters/math_master_original.png`，复制前后校验 SHA-256 一致；
+2. 保持 163×207 原图的完整画面与长宽比，不裁切、不去背景、不重绘人物；
+3. 使用高质量双三次插值等比放大到 256 像素高，水平居中放入 256×256 RGBA 画布；
+4. 只在左右不足区域使用透明像素补齐，输出
+   `public/assets/characters/math_master.png`；
+5. 为头部、颈部、面部、手持和背部建立默认锚点，仍允许用户在外观页按饰品手动微调。
 
 ## 2. 装扮网格提示词
 
@@ -60,10 +72,11 @@ Front or slight 3/4 view. No pet, text, cell borders, opaque background, waterma
    把宽格拉伸成正方形。
 4. 使用高质量双三次插值导出非交错 PNG。项目本轮通过 PowerShell `System.Drawing` 完成
    拆分和缩放，没有用脚本重绘或改变生成内容。
-5. 生成 6 列装扮联系表和 4 列角色联系表，检查裁切、串格、透明杂点和小尺寸轮廓。
+5. 生成 6 列装扮联系表和 4 列动物角色联系表，检查裁切、串格、透明杂点和小尺寸轮廓。
 
 最终角色写入 `public/assets/characters/`，装扮写入 `public/assets/items/`。原始生成图位于工具
-运行缓存，不是发布依赖；项目只提交最终资源、提示词与处理说明。
+运行缓存，不是发布依赖；用户提供的原始头像则单独保存在 `art_sources/characters/`，避免
+桌面源文件删除后无法复现正式资源。
 
 ## 4. 穿戴校准
 
@@ -74,7 +87,7 @@ Front or slight 3/4 view. No pet, text, cell borders, opaque background, waterma
 3. 用户在外观页所做的微调按“伙伴 + 饰品”写入 `item_adjustments`，在前两层之后应用。
 
 桌宠 `App.tsx` 和控制中心 `PetPreview.tsx` 都调用 `resolvedAnchor`，背部物品在角色下层，
-其他槽位在角色上层。默认校准时至少组合一件每槽位代表物，覆盖全部 8 个角色；再检查
+其他槽位在角色上层。默认校准时至少组合一件每槽位代表物，覆盖全部 9 个角色；再检查
 25%、50%、75%、100%、125% 五档缩放和键鼠/边缘动作。用户微调用于个人观感调整，不能
 代替新素材入库前的默认锚点校准。
 
@@ -89,6 +102,7 @@ npm run typecheck
 npm test
 ```
 
-`update-v2-art-registry.mjs` 会更新生成素材的字节数和 SHA-256；`validate:assets` 会检查文件
+`update-v2-art-registry.mjs` 会更新生成素材与用户原图角色正式资源的字节数和 SHA-256；
+`validate:assets` 会检查文件
 存在、PNG 结构、256×256、alpha、非空画面、来源登记和文档路径。通过自动校验不等于完成
 视觉验收，还必须在实际透明窗口中检查地毯边缘、饰品遮挡、缩放和高 DPI 表现。

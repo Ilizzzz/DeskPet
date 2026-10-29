@@ -7,7 +7,7 @@
  * - real PNG signature + IHDR
  * - 256x256, 8-bit, non-interlaced, with a real alpha channel
  * - not an empty/fully transparent image (alpha bounding box)
- * - registered in public/assets/licenses/sources.json and docs/ASSET_GUIDE.md
+ * - registered in public/assets/licenses/sources.json and docs/design/ASSET_GUIDE.md
  *
  * Exits non-zero when any check fails. No third-party dependencies.
  */
@@ -19,7 +19,7 @@ import { inflateSync } from 'node:zlib';
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
 const CATALOG_DIR = join(ROOT, 'src', 'data', 'catalogs');
 const PUBLIC_DIR = join(ROOT, 'public');
-const GUIDE_PATH = join(ROOT, 'docs', 'ASSET_GUIDE.md');
+const GUIDE_PATH = join(ROOT, 'docs', 'design', 'ASSET_GUIDE.md');
 const SOURCES_PATH = join(ROOT, 'public', 'assets', 'licenses', 'sources.json');
 const LICENSE_PATH = join(ROOT, 'public', 'assets', 'licenses', 'fluent-emoji-LICENSE.txt');
 const EXPECTED_SIZE = 256;
@@ -242,7 +242,7 @@ function validateGuide(references, guideText) {
   for (const asset of references.keys()) {
     const localPath = `public/${asset}`;
     if (!guideText.includes(localPath)) {
-      fail(`${asset}: not registered in docs/ASSET_GUIDE.md (expected "${localPath}")`);
+      fail(`${asset}: not registered in docs/design/ASSET_GUIDE.md (expected "${localPath}")`);
     }
   }
 }
@@ -289,7 +289,7 @@ function main() {
   try {
     guideText = readText(GUIDE_PATH);
   } catch {
-    fail('missing docs/ASSET_GUIDE.md');
+    fail('missing docs/design/ASSET_GUIDE.md');
   }
   if (guideText) validateGuide(references, guideText);
 

@@ -11,7 +11,7 @@
   256×256 RGBA PNG。
 - 生成日期：2026-10-29。
 - 完整提示词、网格顺序、处理和复核步骤见
-  [`docs/V2_ART_GENERATION_GUIDE.md`](../../../docs/V2_ART_GENERATION_GUIDE.md)。
+  [`docs/design/ART_GENERATION.md`](../../../docs/design/ART_GENERATION.md)。
 
 ## Microsoft Fluent Emoji
 

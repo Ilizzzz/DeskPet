@@ -8,3 +8,5 @@ coverage/
 deskpet-forge-template/
 .tmp-*/
 release/
+!docs/release/
+!docs/release/**

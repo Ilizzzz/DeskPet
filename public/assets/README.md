@@ -15,9 +15,9 @@
 
 - 许可证原文：`licenses/fluent-emoji-LICENSE.txt`
 - 逐文件原始 URL 与 SHA-256：`licenses/sources.json`、`licenses/sources.md`
-- 素材清单、修改说明与使用约定：`docs/ASSET_GUIDE.md`
-- 生成提示词、拆分和锚点校准：`docs/V2_ART_GENERATION_GUIDE.md`
-- 第三方声明：`docs/THIRD_PARTY_NOTICES.md`
+- 素材清单、修改说明与使用约定：`docs/design/ASSET_GUIDE.md`
+- 生成提示词、拆分和锚点校准：`docs/design/ART_GENERATION.md`
+- 第三方声明：`docs/legal/THIRD_PARTY_NOTICES.md`
 
 约定：
 

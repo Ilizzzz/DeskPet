@@ -1,6 +1,6 @@
 # DeskPet 开发规范
 
-- 开始任务前阅读 `DeskPet.md`、`docs/DEVELOPMENT_MANUAL.md`、`docs/ARCHITECTURE.md`、`TASKS.md` 和相关代码及测试；以项目文档和当前任务为依据。
+- 开始任务前阅读 `DeskPet.md`、`docs/development/DEVELOPMENT_MANUAL.md`、`docs/development/ARCHITECTURE.md`、`TASKS.md` 和相关代码及测试；以项目文档和当前任务为依据。
 - 每次只修改当前任务所需范围，保留用户已有文件和未提交的更改；不要提前实现后续模块。
 - 使用 TypeScript 严格模式，代码、文件和标识符使用英文；重要业务规则和不直观的决策使用简洁中文注释，避免重复代码含义。
 - 主进程负责窗口和系统能力，渲染进程负责界面；共享目录只放双方都能使用的类型或纯逻辑，不依赖 Electron 或 UI。

@@ -67,14 +67,16 @@ Front or slight 3/4 view. No pet, text, cell borders, opaque background, waterma
 
 ## 4. 穿戴校准
 
-角色与装扮都使用 256 坐标系。`src/data/catalogs/anchors.ts` 分两层处理：
+角色与装扮都使用 256 坐标系。定位分三层处理：
 
 1. `ANCHORS` 为每个角色定义 head / neck / face / hand / back 基础位置；
 2. `ITEM_PLACEMENTS` 对单片镜、翅膀、披风等特殊轮廓追加相对位移和缩放。
+3. 用户在外观页所做的微调按“伙伴 + 饰品”写入 `item_adjustments`，在前两层之后应用。
 
 桌宠 `App.tsx` 和控制中心 `PetPreview.tsx` 都调用 `resolvedAnchor`，背部物品在角色下层，
-其他槽位在角色上层。校准时至少组合一件每槽位代表物，覆盖全部 8 个角色；再检查
-25%、50%、75%、100%、125% 五档缩放和键鼠/边缘动作。
+其他槽位在角色上层。默认校准时至少组合一件每槽位代表物，覆盖全部 8 个角色；再检查
+25%、50%、75%、100%、125% 五档缩放和键鼠/边缘动作。用户微调用于个人观感调整，不能
+代替新素材入库前的默认锚点校准。
 
 ## 5. 来源登记与验收
 

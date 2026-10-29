@@ -58,7 +58,7 @@ const generated = targets.map((target) => {
     local_path: localPath,
     source_url: null,
     author: 'DeskPet contributors using OpenAI ImageGen',
-    license: 'Project-generated asset; see docs/V2_ART_GENERATION_GUIDE.md',
+    license: 'Project-generated asset; see docs/design/ART_GENERATION.md',
     download_date: '2026-10-29',
     modifications:
       target.category === 'character'
@@ -80,7 +80,7 @@ const next = {
   license: 'Per-asset metadata; Fluent Emoji assets remain MIT licensed',
   author: 'Microsoft Corporation and DeskPet contributors',
   download_date: '2026-10-29',
-  attribution: 'See each asset entry and docs/ASSET_GUIDE.md',
+  attribution: 'See each asset entry and docs/design/ASSET_GUIDE.md',
   assets: [...untouched, ...generated].sort((left, right) =>
     left.local_path.localeCompare(right.local_path),
   ),

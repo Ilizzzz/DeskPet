@@ -1,4 +1,5 @@
 import { DatabaseSync } from 'node:sqlite';
+import { existsSync } from 'node:fs';
 import { NotesService } from '../../tools/notes/notes-service';
 import { FocusService } from '../../tools/focus/focus-service';
 import { AppearanceService } from '../../features/appearance/appearance-service';
@@ -44,6 +45,7 @@ export class StatisticsStore {
       .user_version;
     const isNewDatabase = version === 0;
     if (version > SCHEMA_VERSION) throw new Error('统计数据库版本高于当前应用支持的版本');
+    if (version > 0 && version < SCHEMA_VERSION) this.backupBeforeMigration(file);
     if (version === 0)
       this.db.exec(`BEGIN; CREATE TABLE daily_statistics (
       date TEXT PRIMARY KEY, keyboard_count INTEGER NOT NULL CHECK(keyboard_count >= 0),
@@ -136,6 +138,17 @@ export class StatisticsStore {
     if (version < 16) this.migrateVersion2(isNewDatabase);
     if (version < 17) this.migrateItemAdjustments();
     this.initializeProgression();
+  }
+
+  /** 迁移前生成一致的 SQLite 快照；备份存在时保留原件，不反复覆盖。 */
+  private backupBeforeMigration(file: string): void {
+    const extension = '.sqlite';
+    const base = file.endsWith(extension) ? file.slice(0, -extension.length) : file;
+    const backupFile = `${base}.pre-v${SCHEMA_VERSION}.sqlite`;
+    if (existsSync(backupFile)) return;
+    const quote = "'";
+    const escapedFile = backupFile.replaceAll(quote, quote + quote);
+    this.db.exec(`VACUUM INTO '${escapedFile}'`);
   }
 
   /** 17 版：按“伙伴 + 饰品”保存用户微调，避免一套偏移影响其他伙伴。 */

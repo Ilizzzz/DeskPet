@@ -210,6 +210,18 @@ describe('statistics persistence', () => {
         store.appearance.get().inventory.filter((entry) => entry.itemId === 'beret_artist'),
       ).toEqual([{ itemId: 'beret_artist', quantity: 1 }]);
       store.close();
+
+      const backupFile = `${file.slice(0, -'.sqlite'.length)}.pre-v17.sqlite`;
+      const backup = new DatabaseSync(backupFile, { readOnly: true });
+      expect(backup.prepare('PRAGMA user_version').get()).toEqual({ user_version: 15 });
+      expect(
+        backup
+          .prepare(
+            'SELECT level, experience, total_experience AS totalExperience FROM growth_state WHERE id = 1',
+          )
+          .get(),
+      ).toEqual({ level: 20, experience: 42, totalExperience: 5000 });
+      backup.close();
     } finally {
       rmSync(directory, { recursive: true, force: true });
     }

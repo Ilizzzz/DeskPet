@@ -2,6 +2,7 @@ import type { ItemRarity, ItemSlot } from '../../shared/types/appearance';
 import { SCENES } from './scenes';
 
 export { ANCHORS as ITEM_ANCHORS } from './anchors';
+export { resolvedAnchor } from './anchors';
 export type { ItemAnchor, CharacterAnchors } from './anchors';
 export { SCENES } from './scenes';
 export type { SceneDefinition, SceneDecoration, SceneTheme } from './scenes';
@@ -25,7 +26,7 @@ export interface ItemDefinition {
 }
 
 /**
- * 全部角色使用同一套 256×256 透明画布，立绘资源来自 Fluent Emoji（MIT）。
+ * 全部角色使用同一套 256×256 透明画布，采用 V2 原创生成的二次元 2D 坐姿立绘。
  *
  * 解锁等级刻意拉长到 28 级，保证每次升级都有可见的新伙伴或新装扮。
  */
@@ -88,7 +89,7 @@ export const CHARACTERS: readonly CharacterDefinition[] = [
   },
 ] as const;
 
-/** 25 件装扮，覆盖头部、颈部、面部、手持和背部五个槽位。 */
+/** Version 2 装扮目录，覆盖五个槽位，并包含五件成长里程碑装扮。 */
 export const ITEMS: readonly ItemDefinition[] = [
   {
     id: 'cap_blue',
@@ -313,6 +314,51 @@ export const ITEMS: readonly ItemDefinition[] = [
     slot: 'back',
     rarity: 'legendary',
     asset: 'assets/items/wing_angel.png',
+    unlockLevel: 30,
+  },
+  {
+    id: 'beret_artist',
+    name: '画家贝雷帽',
+    description: 'Lv.5 的成长纪念，灵感刚刚好。',
+    slot: 'head',
+    rarity: 'rare',
+    asset: 'assets/items/beret_artist.png',
+    unlockLevel: 5,
+  },
+  {
+    id: 'collar_starlight',
+    name: '星光领结',
+    description: 'Lv.10 的陪伴纪念。',
+    slot: 'neck',
+    rarity: 'rare',
+    asset: 'assets/items/collar_starlight.png',
+    unlockLevel: 10,
+  },
+  {
+    id: 'monocle_moon',
+    name: '月夜单片镜',
+    description: 'Lv.15 的成长纪念，映着一弯月光。',
+    slot: 'face',
+    rarity: 'epic',
+    asset: 'assets/items/monocle_moon.png',
+    unlockLevel: 15,
+  },
+  {
+    id: 'lantern_star',
+    name: '手提星灯',
+    description: 'Lv.20 的成长纪念，照亮桌面一角。',
+    slot: 'hand',
+    rarity: 'epic',
+    asset: 'assets/items/lantern_star.png',
+    unlockLevel: 20,
+  },
+  {
+    id: 'cape_night',
+    name: '夜空披风',
+    description: 'Lv.30 的传奇陪伴纪念。',
+    slot: 'back',
+    rarity: 'legendary',
+    asset: 'assets/items/cape_night.png',
     unlockLevel: 30,
   },
 ] as const;

@@ -1,89 +1,22 @@
-# 素材来源清单（Microsoft Fluent Emoji / MIT）
+# 素材来源清单
 
-- 来源仓库：<https://github.com/microsoft/fluentui-emoji>
-- 作者：Microsoft Corporation
-- 许可证：MIT（完整文本见 `public/assets/licenses/fluent-emoji-LICENSE.txt`）
-- 下载日期：2026-10-28
-- 下载后仅转存为 RGBA PNG 并校验为 256×256，未修改画面。
+机器可读的逐文件来源、作者、处理方式、SHA-256 与字节数见同目录
+[`sources.json`](sources.json)，该 JSON 是发布校验的唯一数据源。
 
-| asset_id          | 类别     | Emoji                 | 原始 URL                                                                                                                           | SHA-256             |  字节 |
-| ----------------- | -------- | --------------------- | ---------------------------------------------------------------------------------------------------------------------------------- | ------------------- | ----: |
-| `cat`             | 角色     | Cat                   | <https://raw.githubusercontent.com/microsoft/fluentui-emoji/main/assets/Cat/3D/cat_3d.png>                                         | `24e2354dc60ae700…` | 31343 |
-| `chipmunk`        | 角色     | Chipmunk              | <https://raw.githubusercontent.com/microsoft/fluentui-emoji/main/assets/Chipmunk/3D/chipmunk_3d.png>                               | `fa7b2232858fb461…` | 37912 |
-| `dog`             | 角色     | Dog                   | <https://raw.githubusercontent.com/microsoft/fluentui-emoji/main/assets/Dog/3D/dog_3d.png>                                         | `bc75fb95ef4603ba…` | 31641 |
-| `hedgehog`        | 角色     | Hedgehog              | <https://raw.githubusercontent.com/microsoft/fluentui-emoji/main/assets/Hedgehog/3D/hedgehog_3d.png>                               | `1a742a63917f501c…` | 29734 |
-| `penguin`         | 角色     | Penguin               | <https://raw.githubusercontent.com/microsoft/fluentui-emoji/main/assets/Penguin/3D/penguin_3d.png>                                 | `b9a5bf4b12cd77e2…` | 30813 |
-| `rabbit`          | 角色     | Rabbit                | <https://raw.githubusercontent.com/microsoft/fluentui-emoji/main/assets/Rabbit/3D/rabbit_3d.png>                                   | `2cbde3c48ab606f9…` | 28268 |
-| `tiger`           | 角色     | Tiger                 | <https://raw.githubusercontent.com/microsoft/fluentui-emoji/main/assets/Tiger/3D/tiger_3d.png>                                     | `2d6083641560d321…` | 30574 |
-| `turtle`          | 角色     | Turtle                | <https://raw.githubusercontent.com/microsoft/fluentui-emoji/main/assets/Turtle/3D/turtle_3d.png>                                   | `4030b182065dcedb…` | 29099 |
-| `beach_umbrella`  | 场景装饰 | Beach with umbrella   | <https://raw.githubusercontent.com/microsoft/fluentui-emoji/main/assets/Beach%20with%20umbrella/3D/beach_with_umbrella_3d.png>     | `974ee1964ec6d929…` | 35042 |
-| `books`           | 场景装饰 | Books                 | <https://raw.githubusercontent.com/microsoft/fluentui-emoji/main/assets/Books/3D/books_3d.png>                                     | `a0af989839f0b618…` | 23396 |
-| `bridge_night`    | 场景装饰 | Bridge at night       | <https://raw.githubusercontent.com/microsoft/fluentui-emoji/main/assets/Bridge%20at%20night/3D/bridge_at_night_3d.png>             | `a6df0039606dc874…` | 49334 |
-| `cherry_blossom`  | 场景装饰 | Cherry blossom        | <https://raw.githubusercontent.com/microsoft/fluentui-emoji/main/assets/Cherry%20blossom/3D/cherry_blossom_3d.png>                 | `4ac8601dc82bf936…` | 32186 |
-| `cityscape_dusk`  | 场景装饰 | Cityscape at dusk     | <https://raw.githubusercontent.com/microsoft/fluentui-emoji/main/assets/Cityscape%20at%20dusk/3D/cityscape_at_dusk_3d.png>         | `6e3274c7a2ab83c7…` | 23140 |
-| `crescent_moon`   | 场景装饰 | Crescent moon         | <https://raw.githubusercontent.com/microsoft/fluentui-emoji/main/assets/Crescent%20moon/3D/crescent_moon_3d.png>                   | `ffffa32087c346f2…` | 22154 |
-| `cupcake`         | 场景装饰 | Cupcake               | <https://raw.githubusercontent.com/microsoft/fluentui-emoji/main/assets/Cupcake/3D/cupcake_3d.png>                                 | `a711e654a0d82e3a…` | 38779 |
-| `deciduous_tree`  | 场景装饰 | Deciduous tree        | <https://raw.githubusercontent.com/microsoft/fluentui-emoji/main/assets/Deciduous%20tree/3D/deciduous_tree_3d.png>                 | `a5ec51c9ac973804…` | 26923 |
-| `evergreen_tree`  | 场景装饰 | Evergreen tree        | <https://raw.githubusercontent.com/microsoft/fluentui-emoji/main/assets/Evergreen%20tree/3D/evergreen_tree_3d.png>                 | `716cb925f47b7c3c…` | 19640 |
-| `house`           | 场景装饰 | House                 | <https://raw.githubusercontent.com/microsoft/fluentui-emoji/main/assets/House/3D/house_3d.png>                                     | `cfbb01aec00b8c34…` | 40289 |
-| `light_bulb`      | 场景装饰 | Light bulb            | <https://raw.githubusercontent.com/microsoft/fluentui-emoji/main/assets/Light%20bulb/3D/light_bulb_3d.png>                         | `3948604bb8f1b324…` | 20982 |
-| `mushroom`        | 场景装饰 | Mushroom              | <https://raw.githubusercontent.com/microsoft/fluentui-emoji/main/assets/Mushroom/3D/mushroom_3d.png>                               | `b51c587dc25bef73…` | 21498 |
-| `night_stars`     | 场景装饰 | Night with stars      | <https://raw.githubusercontent.com/microsoft/fluentui-emoji/main/assets/Night%20with%20stars/3D/night_with_stars_3d.png>           | `3242646e1c583c52…` | 27171 |
-| `open_book`       | 场景装饰 | Open book             | <https://raw.githubusercontent.com/microsoft/fluentui-emoji/main/assets/Open%20book/3D/open_book_3d.png>                           | `50e28aa314bf8362…` | 21208 |
-| `palm_tree`       | 场景装饰 | Palm tree             | <https://raw.githubusercontent.com/microsoft/fluentui-emoji/main/assets/Palm%20tree/3D/palm_tree_3d.png>                           | `30b3767106019875…` | 27417 |
-| `potted_plant`    | 场景装饰 | Potted plant          | <https://raw.githubusercontent.com/microsoft/fluentui-emoji/main/assets/Potted%20plant/3D/potted_plant_3d.png>                     | `ed78ffbfe64f1f44…` | 29859 |
-| `shooting_star`   | 场景装饰 | Shooting star         | <https://raw.githubusercontent.com/microsoft/fluentui-emoji/main/assets/Shooting%20star/3D/shooting_star_3d.png>                   | `181ec868dd64c23e…` | 36794 |
-| `snowflake`       | 场景装饰 | Snowflake             | <https://raw.githubusercontent.com/microsoft/fluentui-emoji/main/assets/Snowflake/3D/snowflake_3d.png>                             | `97f61073930dc206…` | 38616 |
-| `snowman`         | 场景装饰 | Snowman               | <https://raw.githubusercontent.com/microsoft/fluentui-emoji/main/assets/Snowman/3D/snowman_3d.png>                                 | `425000b39723937f…` | 39008 |
-| `sparkles`        | 场景装饰 | Sparkles              | <https://raw.githubusercontent.com/microsoft/fluentui-emoji/main/assets/Sparkles/3D/sparkles_3d.png>                               | `7b89b5cf3a7cecd4…` | 20494 |
-| `star`            | 场景装饰 | Star                  | <https://raw.githubusercontent.com/microsoft/fluentui-emoji/main/assets/Star/3D/star_3d.png>                                       | `281b9568ba7d2231…` | 22596 |
-| `sunset`          | 场景装饰 | Sunset                | <https://raw.githubusercontent.com/microsoft/fluentui-emoji/main/assets/Sunset/3D/sunset_3d.png>                                   | `1093136e801d5e10…` | 31470 |
-| `teacup`          | 场景装饰 | Teacup without handle | <https://raw.githubusercontent.com/microsoft/fluentui-emoji/main/assets/Teacup%20without%20handle/3D/teacup_without_handle_3d.png> | `26c4429e7d06e451…` | 28910 |
-| `water_wave`      | 场景装饰 | Water wave            | <https://raw.githubusercontent.com/microsoft/fluentui-emoji/main/assets/Water%20wave/3D/water_wave_3d.png>                         | `216818e48ad57987…` | 29376 |
-| `achievement`     | 界面图标 | Trophy                | <https://raw.githubusercontent.com/microsoft/fluentui-emoji/main/assets/Trophy/3D/trophy_3d.png>                                   | `b8aeb1cc7bb12bf5…` | 29615 |
-| `anniversary`     | 界面图标 | Tear-off calendar     | <https://raw.githubusercontent.com/microsoft/fluentui-emoji/main/assets/Tear-off%20calendar/3D/tear-off_calendar_3d.png>           | `39d3b6555b6cb385…` | 28766 |
-| `app`             | 界面图标 | Cat                   | <https://raw.githubusercontent.com/microsoft/fluentui-emoji/main/assets/Cat/3D/cat_3d.png>                                         | `24e2354dc60ae700…` | 31343 |
-| `appearance`      | 界面图标 | Artist palette        | <https://raw.githubusercontent.com/microsoft/fluentui-emoji/main/assets/Artist%20palette/3D/artist_palette_3d.png>                 | `8248d3c8a67b060d…` | 33166 |
-| `checkin`         | 界面图标 | Calendar              | <https://raw.githubusercontent.com/microsoft/fluentui-emoji/main/assets/Calendar/3D/calendar_3d.png>                               | `2fbc97b501849335…` | 37104 |
-| `clock`           | 界面图标 | Timer clock           | <https://raw.githubusercontent.com/microsoft/fluentui-emoji/main/assets/Timer%20clock/3D/timer_clock_3d.png>                       | `76016c4fc8bfc5f2…` | 52773 |
-| `coins`           | 界面图标 | Star                  | <https://raw.githubusercontent.com/microsoft/fluentui-emoji/main/assets/Star/3D/star_3d.png>                                       | `281b9568ba7d2231…` | 22596 |
-| `countdown`       | 界面图标 | Hourglass not done    | <https://raw.githubusercontent.com/microsoft/fluentui-emoji/main/assets/Hourglass%20not%20done/3D/hourglass_not_done_3d.png>       | `3c7cd7cbfb093961…` | 31987 |
-| `focus`           | 界面图标 | Stopwatch             | <https://raw.githubusercontent.com/microsoft/fluentui-emoji/main/assets/Stopwatch/3D/stopwatch_3d.png>                             | `2502c8980266ebf3…` | 43252 |
-| `fragments`       | 界面图标 | Sparkles              | <https://raw.githubusercontent.com/microsoft/fluentui-emoji/main/assets/Sparkles/3D/sparkles_3d.png>                               | `7b89b5cf3a7cecd4…` | 20494 |
-| `growth`          | 界面图标 | Chart increasing      | <https://raw.githubusercontent.com/microsoft/fluentui-emoji/main/assets/Chart%20increasing/3D/chart_increasing_3d.png>             | `c7331e9372d1f0f7…` | 38744 |
-| `health`          | 界面图标 | Alarm clock           | <https://raw.githubusercontent.com/microsoft/fluentui-emoji/main/assets/Alarm%20clock/3D/alarm_clock_3d.png>                       | `a3a9363c9197ab82…` | 40096 |
-| `home`            | 界面图标 | House with garden     | <https://raw.githubusercontent.com/microsoft/fluentui-emoji/main/assets/House%20with%20garden/3D/house_with_garden_3d.png>         | `14bbdf70e8735926…` | 39009 |
-| `keyboard`        | 界面图标 | Keyboard              | <https://raw.githubusercontent.com/microsoft/fluentui-emoji/main/assets/Keyboard/3D/keyboard_3d.png>                               | `edc0a70f7457045c…` | 25409 |
-| `levelup`         | 界面图标 | Glowing star          | <https://raw.githubusercontent.com/microsoft/fluentui-emoji/main/assets/Glowing%20star/3D/glowing_star_3d.png>                     | `92ce7588434dbc33…` | 26207 |
-| `mouse`           | 界面图标 | Computer mouse        | <https://raw.githubusercontent.com/microsoft/fluentui-emoji/main/assets/Computer%20mouse/3D/computer_mouse_3d.png>                 | `7d9288bd8415cabb…` | 18258 |
-| `notes`           | 界面图标 | Memo                  | <https://raw.githubusercontent.com/microsoft/fluentui-emoji/main/assets/Memo/3D/memo_3d.png>                                       | `30f217e97ea1a1ee…` | 27765 |
-| `settings`        | 界面图标 | Gear                  | <https://raw.githubusercontent.com/microsoft/fluentui-emoji/main/assets/Gear/3D/gear_3d.png>                                       | `e0afd3a518ef9307…` | 37676 |
-| `summary`         | 界面图标 | Bar chart             | <https://raw.githubusercontent.com/microsoft/fluentui-emoji/main/assets/Bar%20chart/3D/bar_chart_3d.png>                           | `be7d2ccd3a222f63…` | 34743 |
-| `todo`            | 界面图标 | Check box with check  | <https://raw.githubusercontent.com/microsoft/fluentui-emoji/main/assets/Check%20box%20with%20check/3D/check_box_with_check_3d.png> | `e39d6c9891a737aa…` | 23888 |
-| `tools`           | 界面图标 | Hammer and wrench     | <https://raw.githubusercontent.com/microsoft/fluentui-emoji/main/assets/Hammer%20and%20wrench/3D/hammer_and_wrench_3d.png>         | `b71478aa15282a3c…` | 33414 |
-| `water`           | 界面图标 | Droplet               | <https://raw.githubusercontent.com/microsoft/fluentui-emoji/main/assets/Droplet/3D/droplet_3d.png>                                 | `66a7cbdc16207179…` | 17736 |
-| `backpack_school` | 装扮     | Backpack              | <https://raw.githubusercontent.com/microsoft/fluentui-emoji/main/assets/Backpack/3D/backpack_3d.png>                               | `ad2e1ce8f12b15fe…` | 32484 |
-| `balloon_red`     | 装扮     | Balloon               | <https://raw.githubusercontent.com/microsoft/fluentui-emoji/main/assets/Balloon/3D/balloon_3d.png>                                 | `7eb342169e4df729…` | 21935 |
-| `bell_collar`     | 装扮     | Bell                  | <https://raw.githubusercontent.com/microsoft/fluentui-emoji/main/assets/Bell/3D/bell_3d.png>                                       | `9fbcbeaafef66e26…` | 23742 |
-| `bouquet_flower`  | 装扮     | Bouquet               | <https://raw.githubusercontent.com/microsoft/fluentui-emoji/main/assets/Bouquet/3D/bouquet_3d.png>                                 | `2a8e7d90ec1fe9ee…` | 37663 |
-| `cap_blue`        | 装扮     | Billed cap            | <https://raw.githubusercontent.com/microsoft/fluentui-emoji/main/assets/Billed%20cap/3D/billed_cap_3d.png>                         | `500b96d94dddfb89…` | 20845 |
-| `cap_graduate`    | 装扮     | Graduation cap        | <https://raw.githubusercontent.com/microsoft/fluentui-emoji/main/assets/Graduation%20cap/3D/graduation_cap_3d.png>                 | `c7893bce7a204b82…` | 26662 |
-| `crown_gold`      | 装扮     | Crown                 | <https://raw.githubusercontent.com/microsoft/fluentui-emoji/main/assets/Crown/3D/crown_3d.png>                                     | `e36e6127a5dc7c6f…` | 29868 |
-| `crystal_ball`    | 装扮     | Crystal ball          | <https://raw.githubusercontent.com/microsoft/fluentui-emoji/main/assets/Crystal%20ball/3D/crystal_ball_3d.png>                     | `f33d2c96f800414c…` | 32840 |
-| `flower_crown`    | 装扮     | Blossom               | <https://raw.githubusercontent.com/microsoft/fluentui-emoji/main/assets/Blossom/3D/blossom_3d.png>                                 | `96be8f5a24909ede…` | 28370 |
-| `glasses_round`   | 装扮     | Glasses               | <https://raw.githubusercontent.com/microsoft/fluentui-emoji/main/assets/Glasses/3D/glasses_3d.png>                                 | `5249f9df85eaef91…` | 18488 |
-| `goggles_sky`     | 装扮     | Goggles               | <https://raw.githubusercontent.com/microsoft/fluentui-emoji/main/assets/Goggles/3D/goggles_3d.png>                                 | `36942aa8095f46f0…` | 33716 |
-| `handbag_fashion` | 装扮     | Handbag               | <https://raw.githubusercontent.com/microsoft/fluentui-emoji/main/assets/Handbag/3D/handbag_3d.png>                                 | `53d055fd644e2db5…` | 29695 |
-| `hat_top`         | 装扮     | Top hat               | <https://raw.githubusercontent.com/microsoft/fluentui-emoji/main/assets/Top%20hat/3D/top_hat_3d.png>                               | `8a827c7165b9fa4a…` | 30079 |
-| `hat_woman`       | 装扮     | Womans hat            | <https://raw.githubusercontent.com/microsoft/fluentui-emoji/main/assets/Womans%20hat/3D/womans_hat_3d.png>                         | `09d80b3371addfb1…` | 27432 |
-| `headphone_music` | 装扮     | Headphone             | <https://raw.githubusercontent.com/microsoft/fluentui-emoji/main/assets/Headphone/3D/headphone_3d.png>                             | `4230055a4416ce27…` | 26908 |
-| `party_popper`    | 装扮     | Party popper          | <https://raw.githubusercontent.com/microsoft/fluentui-emoji/main/assets/Party%20popper/3D/party_popper_3d.png>                     | `dbb05601d723591c…` | 40239 |
-| `ribbon_pink`     | 装扮     | Ribbon                | <https://raw.githubusercontent.com/microsoft/fluentui-emoji/main/assets/Ribbon/3D/ribbon_3d.png>                                   | `dacae7950fa825de…` | 34676 |
-| `ribbon_reminder` | 装扮     | Reminder ribbon       | <https://raw.githubusercontent.com/microsoft/fluentui-emoji/main/assets/Reminder%20ribbon/3D/reminder_ribbon_3d.png>               | `a99083a6e5796577…` | 28516 |
-| `rocket_jet`      | 装扮     | Rocket                | <https://raw.githubusercontent.com/microsoft/fluentui-emoji/main/assets/Rocket/3D/rocket_3d.png>                                   | `1ae7681eefdf711d…` | 34325 |
-| `scarf_red`       | 装扮     | Scarf                 | <https://raw.githubusercontent.com/microsoft/fluentui-emoji/main/assets/Scarf/3D/scarf_3d.png>                                     | `7bebfd59c4719c06…` | 30451 |
-| `sunglasses_cool` | 装扮     | Sunglasses            | <https://raw.githubusercontent.com/microsoft/fluentui-emoji/main/assets/Sunglasses/3D/sunglasses_3d.png>                           | `4518da04987e7d3c…` | 19857 |
-| `tie_necktie`     | 装扮     | Necktie               | <https://raw.githubusercontent.com/microsoft/fluentui-emoji/main/assets/Necktie/3D/necktie_3d.png>                                 | `aa68a9dd1488f71a…` | 35558 |
-| `umbrella_closed` | 装扮     | Closed umbrella       | <https://raw.githubusercontent.com/microsoft/fluentui-emoji/main/assets/Closed%20umbrella/3D/closed_umbrella_3d.png>               | `8c09c1b72c111219…` | 27579 |
-| `wand_magic`      | 装扮     | Magic wand            | <https://raw.githubusercontent.com/microsoft/fluentui-emoji/main/assets/Magic%20wand/3D/magic_wand_3d.png>                         | `81f4d3647d53c6bf…` | 17269 |
-| `wing_angel`      | 装扮     | Wing                  | <https://raw.githubusercontent.com/microsoft/fluentui-emoji/main/assets/Wing/3D/wing_3d.png>                                       | `5150c0b5b788660e…` | 28486 |
+## Version 2 角色与装扮
+
+- 8 个 `public/assets/characters/*.png` 与 30 个 `public/assets/items/*.png` 由
+  DeskPet 项目使用 OpenAI ImageGen 专门生成。
+- 角色按单张透明立绘生成；装扮按五张透明网格图生成后拆分、等比缩放并输出为
+  256×256 RGBA PNG。
+- 生成日期：2026-10-29。
+- 完整提示词、网格顺序、处理和复核步骤见
+  [`docs/V2_ART_GENERATION_GUIDE.md`](../../../docs/V2_ART_GENERATION_GUIDE.md)。
+
+## Microsoft Fluent Emoji
+
+- `public/assets/icons/` 与保留的 `public/assets/decor/` 来自
+  [Microsoft Fluent Emoji](https://github.com/microsoft/fluentui-emoji)。
+- 作者：Microsoft Corporation。
+- 许可证：MIT；完整文本见 `fluent-emoji-LICENSE.txt`。
+- 下载日期：2026-10-28；资源转存为 256×256 RGBA PNG。

@@ -1,6 +1,7 @@
+import type { ItemSlot } from '../../shared/types/appearance';
+
 // 饰品锚点以角色 256×256 原始画布为坐标，渲染时按显示尺寸等比缩放。
-// 数值通过 Pillow 把角色立绘与代表饰品（帽/围巾/眼镜/手持/背包）合成预览后逐个校准：
-// head 以帽檐底边对准头顶，其余槽位以饰品可见内容的中心对准目标部位。
+// V2 使用全角色合成预览逐个校准；基础锚点负责角色差异，ITEM_PLACEMENTS 负责单件造型差异。
 // 负的 left/top 表示饰品允许超出立绘画布，渲染容器不得裁剪溢出。
 export interface ItemAnchor {
   left: number;
@@ -20,72 +21,110 @@ export type CharacterAnchors = {
 };
 
 export const ANCHORS: Readonly<Record<string, CharacterAnchors>> = {
-  // 侧视，头在左上；帽子压在耳根，围巾/眼镜落在胸颈与眼部，背饰从背部上方露出。
   cat: {
-    head: { left: 20, top: -18, width: 93 },
-    neck: { left: 47, top: 87, width: 69 },
-    face: { left: 33, top: 46, width: 66 },
-    hand: { left: 63, top: 150, width: 71 },
-    back: { left: 127, top: 45, width: 110 },
+    head: { left: 50, top: -5, width: 105 },
+    neck: { left: 78, top: 105, width: 70 },
+    face: { left: 50, top: 30, width: 85 },
+    hand: { left: 140, top: 130, width: 75 },
+    back: { left: 120, top: 80, width: 120 },
   },
-  // 侧视，耳朵下垂、吻部朝左；颈部目标略靠前胸。
   dog: {
-    head: { left: 24, top: -8, width: 93 },
-    neck: { left: 62, top: 112, width: 71 },
-    face: { left: 47, top: 60, width: 66 },
-    hand: { left: 75, top: 161, width: 71 },
-    back: { left: 131, top: 60, width: 113 },
+    head: { left: 55, top: -5, width: 105 },
+    neck: { left: 78, top: 105, width: 70 },
+    face: { left: 58, top: 30, width: 85 },
+    hand: { left: 140, top: 135, width: 75 },
+    back: { left: 120, top: 80, width: 120 },
   },
-  // 侧视短身，长耳占画面右上；帽子放在耳根之间，避免遮住耳朵。
   rabbit: {
-    head: { left: 33, top: 2, width: 84 },
-    neck: { left: 63, top: 110, width: 69 },
-    face: { left: 25, top: 75, width: 59 },
-    hand: { left: 42, top: 144, width: 68 },
-    back: { left: 132, top: 69, width: 119 },
+    head: { left: 70, top: 65, width: 85 },
+    neck: { left: 78, top: 130, width: 65 },
+    face: { left: 65, top: 75, width: 75 },
+    hand: { left: 135, top: 150, width: 70 },
+    back: { left: 125, top: 95, width: 110 },
   },
-  // 正视，头身同宽；背饰只能从双肩与头顶两侧露出，因此整体上移。
   penguin: {
-    head: { left: 72, top: -21, width: 113 },
-    neck: { left: 80, top: 96, width: 96 },
-    face: { left: 75, top: 54, width: 105 },
-    hand: { left: 158, top: 145, width: 71 },
-    back: { left: 47, top: 34, width: 162 },
+    head: { left: 65, top: -10, width: 115 },
+    neck: { left: 82, top: 105, width: 85 },
+    face: { left: 65, top: 30, width: 105 },
+    hand: { left: 150, top: 145, width: 70 },
+    back: { left: 60, top: 75, width: 135 },
   },
-  // 侧视，头大且低伏；尾部在上方，背饰放在背部中段。
   tiger: {
-    head: { left: 30, top: 5, width: 93 },
-    neck: { left: 71, top: 129, width: 66 },
-    face: { left: 40, top: 87, width: 64 },
-    hand: { left: 65, top: 165, width: 71 },
-    back: { left: 135, top: 89, width: 113 },
+    head: { left: 52, top: -5, width: 100 },
+    neck: { left: 76, top: 105, width: 68 },
+    face: { left: 52, top: 30, width: 80 },
+    hand: { left: 140, top: 135, width: 75 },
+    back: { left: 120, top: 80, width: 115 },
   },
-  // 侧视低矮，头盔与身体高度重合；帽子和眼镜缩到头部比例，背饰放在龟壳上。
   turtle: {
-    head: { left: 17, top: 112, width: 59 },
-    neck: { left: 41, top: 163, width: 46 },
-    face: { left: 18, top: 143, width: 53 },
-    hand: { left: 162, top: 168, width: 68 },
-    back: { left: 59, top: 33, width: 145 },
+    head: { left: 20, top: 10, width: 100 },
+    neck: { left: 60, top: 120, width: 65 },
+    face: { left: 30, top: 52, width: 80 },
+    hand: { left: 150, top: 145, width: 70 },
+    back: { left: 120, top: 80, width: 110 },
   },
-  // 侧视，尖刺占据背部上半；头饰戴在左前方小脑袋上，背饰架在刺间。
   hedgehog: {
-    head: { left: 41, top: 80, width: 63 },
-    neck: { left: 78, top: 170, width: 53 },
-    face: { left: 73, top: 125, width: 55 },
-    hand: { left: 114, top: 173, width: 65 },
-    back: { left: 103, top: 20, width: 145 },
+    head: { left: 55, top: 30, width: 90 },
+    neck: { left: 82, top: 125, width: 65 },
+    face: { left: 58, top: 55, width: 75 },
+    hand: { left: 145, top: 150, width: 65 },
+    back: { left: 125, top: 85, width: 115 },
   },
-  // 坐姿侧视，大尾巴在右；背饰贴着尾巴根部，避免被尾巴完全遮住。
   chipmunk: {
-    head: { left: 39, top: -2, width: 79 },
-    neck: { left: 67, top: 109, width: 62 },
-    face: { left: 46, top: 67, width: 59 },
-    hand: { left: 58, top: 131, width: 68 },
-    back: { left: 154, top: 49, width: 101 },
+    head: { left: 45, top: -5, width: 105 },
+    neck: { left: 72, top: 105, width: 65 },
+    face: { left: 45, top: 30, width: 80 },
+    hand: { left: 135, top: 135, width: 70 },
+    back: { left: 125, top: 80, width: 115 },
   },
+};
+
+interface ItemPlacement {
+  scale?: number;
+  /** 相对基础锚点宽度的偏移。 */
+  x?: number;
+  y?: number;
+}
+
+const ITEM_PLACEMENTS: Readonly<Record<string, ItemPlacement>> = {
+  flower_crown: { scale: 0.9, y: 0.16 },
+  headphone_music: { scale: 1.05, y: 0.12 },
+  crown_gold: { scale: 0.82, y: 0.2 },
+  cap_graduate: { scale: 1.05, y: -0.04 },
+  scarf_red: { scale: 1.25, y: -0.08 },
+  bell_collar: { scale: 0.82, y: 0.08 },
+  ribbon_pink: { scale: 0.9, y: 0.04 },
+  tie_necktie: { scale: 0.86, y: 0.1 },
+  ribbon_reminder: { scale: 0.9, y: 0.04 },
+  collar_starlight: { scale: 0.85 },
+  goggles_sky: { scale: 1.08 },
+  monocle_moon: { scale: 0.66, x: 0.22 },
+  balloon_red: { scale: 0.92, y: -0.1 },
+  wand_magic: { scale: 0.82 },
+  crystal_ball: { scale: 0.9 },
+  lantern_star: { scale: 0.9 },
+  handbag_fashion: { scale: 0.88 },
+  umbrella_closed: { scale: 0.84, x: 0.1 },
+  rocket_jet: { scale: 1.08 },
+  wing_angel: { scale: 1.45, x: -0.2, y: -0.12 },
+  cape_night: { scale: 1.15, x: -0.16, y: 0.08 },
 };
 
 export function anchorsFor(characterId: string): CharacterAnchors {
   return ANCHORS[characterId] ?? ANCHORS.cat;
+}
+
+/** 组合角色基础锚点与单件装扮微调，桌宠和控制中心预览共用。 */
+export function resolvedAnchor(characterId: string, slot: ItemSlot, itemId: string): ItemAnchor {
+  const base = anchorsFor(characterId)[slot];
+  const placement = ITEM_PLACEMENTS[itemId];
+  if (!placement) return base;
+  const width = base.width * (placement.scale ?? 1);
+  const centerOffset = (base.width - width) / 2;
+  return {
+    ...base,
+    left: base.left + centerOffset + base.width * (placement.x ?? 0),
+    top: base.top + centerOffset + base.width * (placement.y ?? 0),
+    width,
+  };
 }

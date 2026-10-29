@@ -17,10 +17,14 @@ DeskPet 自有源代码和原创资源按项目仓库的许可条款分发。主
 
 正式发布构建必须使用锁定的 `package-lock.json`，并在升级依赖后重新核对本文件。
 
-## 美术资源：Microsoft Fluent Emoji
+## 美术资源
 
-TASK-011 起，`public/assets` 下的角色立绘（`characters/`）、装扮（`items/`）、场景装饰（`decor/`）
-与界面图标（`icons/`）全部来自 **Microsoft Fluent Emoji** 的 3D 风格素材。
+Version 2 的角色立绘（`characters/`）与装扮（`items/`）由项目使用 OpenAI ImageGen 专门
+生成，不再复用 Fluent Emoji 3D 角色与装扮。提示词、透明网格拆分、尺寸处理与复核过程见
+`docs/V2_ART_GENERATION_GUIDE.md`，逐文件 SHA-256 见 `public/assets/licenses/sources.json`。
+
+界面图标（`icons/`）和保留但不再由 V2 场景引用的装饰（`decor/`）来自
+**Microsoft Fluent Emoji**。
 
 - 来源仓库：<https://github.com/microsoft/fluentui-emoji>
 - 作者：Microsoft Corporation
@@ -29,7 +33,7 @@ TASK-011 起，`public/assets` 下的角色立绘（`characters/`）、装扮（
 - 许可证原文：`public/assets/licenses/fluent-emoji-LICENSE.txt`
 - 逐文件来源与 SHA-256：`public/assets/licenses/sources.json`（人读版 `sources.md`）
 - 素材清单与修改说明：`docs/ASSET_GUIDE.md`
-- 修改说明：仅将 PNG 转存为 RGBA 并统一校验为 256×256，未修改画面内容。
+- 修改说明：将使用到的 PNG 转存为 RGBA 并统一校验为 256×256。
 
 ```text
 MIT License

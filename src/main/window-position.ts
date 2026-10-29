@@ -26,7 +26,7 @@ export function readPosition(value: unknown): Point | undefined {
 export function shiftForWindowResize(point: Point, savedSize: number, currentSize: number): Point {
   if (!Number.isFinite(savedSize) || !Number.isFinite(currentSize) || savedSize === currentSize)
     return point;
-  const delta = Math.round((currentSize - savedSize) / 2);
+  const delta = Math.round((savedSize - currentSize) / 2);
   return { x: point.x + delta, y: point.y + delta };
 }
 

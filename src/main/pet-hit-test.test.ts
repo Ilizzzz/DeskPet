@@ -16,4 +16,19 @@ describe('pet hit testing', () => {
     expect(isInsidePet({ x: -100, y: 110 }, bounds)).toBe(false);
     expect(isInsidePet({ x: -100, y: 310 }, bounds)).toBe(false);
   });
+  it('scales the hit area with the pet window', () => {
+    const half = {
+      x: 20,
+      y: 30,
+      width: PET_WINDOW_SIZE / 2,
+      height: PET_WINDOW_SIZE / 2,
+    };
+    expect(
+      isInsidePet(
+        { x: half.x + (PET_ART_LEFT + 10) / 2, y: half.y + (PET_ART_TOP + 10) / 2 },
+        half,
+      ),
+    ).toBe(true);
+    expect(isInsidePet({ x: half.x + 2, y: half.y + 2 }, half)).toBe(false);
+  });
 });

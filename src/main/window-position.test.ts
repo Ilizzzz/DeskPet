@@ -22,7 +22,8 @@ describe('window position', () => {
     expect(restorePosition({ x: 3000, y: 0 }, areas, size)).toBeUndefined();
   });
   it('keeps the pet centered when the window size changes', () => {
-    expect(shiftForWindowResize({ x: 100, y: 100 }, 180, 220)).toEqual({ x: 120, y: 120 });
+    expect(shiftForWindowResize({ x: 100, y: 100 }, 180, 220)).toEqual({ x: 80, y: 80 });
+    expect(shiftForWindowResize({ x: 100, y: 100 }, 220, 110)).toEqual({ x: 155, y: 155 });
     expect(shiftForWindowResize({ x: 100, y: 100 }, 220, 220)).toEqual({ x: 100, y: 100 });
   });
 });

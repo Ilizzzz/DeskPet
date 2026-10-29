@@ -1,5 +1,6 @@
 import { contextBridge, ipcRenderer } from 'electron';
 import type { DesktopApi } from '../shared/types/desktop-api';
+import type { PetActivityEvent } from '../shared/types/economy';
 const desktopApi: DesktopApi = {
   platform: process.platform,
   openDashboard: () => ipcRenderer.invoke('dashboard:open'),
@@ -17,8 +18,11 @@ const desktopApi: DesktopApi = {
   setFocusSound: (enabled) => ipcRenderer.invoke('focus:sound', enabled),
   getAppearance: () => ipcRenderer.invoke('appearance:get'),
   setAppearance: (change) => ipcRenderer.invoke('appearance:set', change),
-  craftItem: (recipeId) => ipcRenderer.invoke('crafting:craft', recipeId),
-  dismantleItem: (itemId) => ipcRenderer.invoke('crafting:dismantle', itemId),
+  purchaseItem: (itemId) => ipcRenderer.invoke('economy:purchase', itemId),
+  dismantleItem: (itemId, allowLast = false) =>
+    ipcRenderer.invoke('economy:dismantle', itemId, allowLast),
+  convertFragments: (amount) => ipcRenderer.invoke('economy:convert-fragments', amount),
+  setWishlist: (itemId) => ipcRenderer.invoke('economy:set-wishlist', itemId),
   listTools: () => ipcRenderer.invoke('tools:list'),
   setToolEnabled: (id, enabled) => ipcRenderer.invoke('tools:set-enabled', id, enabled),
   getSedentary: () => ipcRenderer.invoke('sedentary:get'),
@@ -54,6 +58,12 @@ const desktopApi: DesktopApi = {
   beginPetDrag: () => ipcRenderer.invoke('pet:drag-start'),
   endPetDrag: () => ipcRenderer.invoke('pet:drag-end'),
   openPetMenu: () => ipcRenderer.invoke('pet:menu'),
+  onPetActivity: (listener) => {
+    const handler = (_event: Electron.IpcRendererEvent, activity: unknown) =>
+      listener(activity as PetActivityEvent);
+    ipcRenderer.on('pet:activity', handler);
+    return () => ipcRenderer.removeListener('pet:activity', handler);
+  },
   getAppInstallInfo: () => ipcRenderer.invoke('app:install-info'),
   openAppFolder: (target) => ipcRenderer.invoke('app:open-folder', target),
   uninstallApp: (clearData) => ipcRenderer.invoke('app:uninstall', clearData),

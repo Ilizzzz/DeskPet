@@ -2,6 +2,9 @@ export interface PersistedAppPreferences {
   animationsEnabled: boolean;
   onboardingCompleted: boolean;
   launchAtLogin: boolean;
+  petScale: 25 | 50 | 75 | 100 | 125;
+  edgeSnapEnabled: boolean;
+  inputReactionsEnabled: boolean;
 }
 
 export interface AppSettingsSnapshot extends PersistedAppPreferences {
@@ -17,4 +20,9 @@ export interface AppSettingsSnapshot extends PersistedAppPreferences {
 }
 
 export type AppPreferenceChange =
-  { animationsEnabled: boolean } | { onboardingCompleted: boolean } | { launchAtLogin: boolean };
+  | { animationsEnabled: boolean }
+  | { onboardingCompleted: boolean }
+  | { launchAtLogin: boolean }
+  | { petScale: 25 | 50 | 75 | 100 | 125 }
+  | { edgeSnapEnabled: boolean }
+  | { inputReactionsEnabled: boolean };

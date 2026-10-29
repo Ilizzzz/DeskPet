@@ -30,7 +30,12 @@ import {
 import { PET_WINDOW_SIZE } from '../shared/constants/pet';
 import { registerFeatureIpc } from './ipc/features';
 
-const SIZE = { width: PET_WINDOW_SIZE, height: PET_WINDOW_SIZE };
+let petScale: 25 | 50 | 75 | 100 | 125 = 100;
+let petEdge: 'free' | 'bottom' | 'left' | 'right' = 'free';
+function petWindowSize(): { width: number; height: number } {
+  const size = Math.round((PET_WINDOW_SIZE * petScale) / 100);
+  return { width: size, height: size };
+}
 /** 旧版本窗口尺寸，用于把保存的位置换算成新窗口的中心点。 */
 const LEGACY_PET_WINDOW_SIZE = 180;
 let petWindow: BrowserWindow | undefined;
@@ -51,8 +56,9 @@ let petDragging = false;
 let petDragTimer: NodeJS.Timeout | undefined;
 const inputMonitor = new InputMonitor((counts, days) => {
   pending.push(...days);
+  let drops: import('../shared/types/economy').DropEvent[] = [];
   try {
-    persistPending();
+    drops = persistPending();
   } catch (error) {
     console.error('无法保存统计数据。', error);
     dialog.showErrorBox('统计保存失败', '统计数据暂存在内存中，请检查磁盘空间和用户数据目录。');
@@ -69,14 +75,22 @@ const inputMonitor = new InputMonitor((counts, days) => {
   } catch (error) {
     console.error('无法更新久坐活动状态。', error);
   }
+  if (counts.keyboardCount + counts.mouseCount > 0 && petWindow && !petWindow.isDestroyed())
+    petWindow.webContents.send('pet:activity', {
+      keyboard: counts.keyboardCount,
+      mouse: counts.mouseCount,
+      drops,
+    });
   updateTray();
 });
-function persistPending(): void {
+function persistPending(): import('../shared/types/economy').DropEvent[] {
   if (!statisticsStore) throw new Error('统计数据库不可用');
+  const drops: import('../shared/types/economy').DropEvent[] = [];
   while (pending.length) {
-    statisticsStore.add(pending[0]);
+    drops.push(...statisticsStore.add(pending[0]));
     pending.shift();
   }
+  return drops;
 }
 function flushStatistics(): void {
   inputMonitor.flush();
@@ -275,13 +289,13 @@ function loadPosition() {
       point = shiftForWindowResize(
         point,
         typeof savedSize === 'number' ? savedSize : LEGACY_PET_WINDOW_SIZE,
-        PET_WINDOW_SIZE,
+        petWindowSize().width,
       );
     }
     return restorePosition(
       point,
       screen.getAllDisplays().map((d) => d.workArea),
-      SIZE,
+      petWindowSize(),
     );
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code !== 'ENOENT')
@@ -292,7 +306,11 @@ function loadPosition() {
 function savePosition(window: BrowserWindow): void {
   try {
     const [x, y] = window.getPosition();
-    fs.writeFileSync(positionPath(), JSON.stringify({ x, y, size: PET_WINDOW_SIZE }), 'utf8');
+    fs.writeFileSync(
+      positionPath(),
+      JSON.stringify({ x, y, size: window.getBounds().width }),
+      'utf8',
+    );
   } catch (error) {
     console.error('无法保存桌宠位置。', error);
   }
@@ -327,7 +345,132 @@ function endPetDrag(): void {
     clearInterval(petDragTimer);
     petDragTimer = undefined;
   }
-  if (petWindow && !petWindow.isDestroyed()) savePosition(petWindow);
+  if (petWindow && !petWindow.isDestroyed()) {
+    snapPetToEdge(petWindow);
+    savePosition(petWindow);
+  }
+}
+
+function sendPetPlacement(): void {
+  if (petWindow && !petWindow.isDestroyed())
+    petWindow.webContents.send('pet:activity', { keyboard: 0, mouse: 0, drops: [], edge: petEdge });
+}
+
+function sendPetPreferences(): void {
+  if (!petWindow || petWindow.isDestroyed() || !statisticsStore) return;
+  const preferences = statisticsStore.preferences.get();
+  petWindow.webContents.send('pet:activity', {
+    keyboard: 0,
+    mouse: 0,
+    drops: [],
+    animationsEnabled: preferences.animationsEnabled,
+    inputReactionsEnabled: preferences.inputReactionsEnabled,
+  });
+}
+
+function snapPetToEdge(window: BrowserWindow): void {
+  const preferences = statisticsStore?.preferences.get();
+  if (!preferences?.edgeSnapEnabled) {
+    petEdge = 'free';
+    sendPetPlacement();
+    return;
+  }
+  const bounds = window.getBounds();
+  const area = screen.getDisplayMatching(bounds).workArea;
+  const threshold = Math.max(10, Math.round((24 * petScale) / 100));
+  const distances = {
+    left: Math.abs(bounds.x - area.x),
+    right: Math.abs(area.x + area.width - (bounds.x + bounds.width)),
+    bottom: Math.abs(area.y + area.height - (bounds.y + bounds.height)),
+  };
+  const nearest = (Object.entries(distances) as ['left' | 'right' | 'bottom', number][]).sort(
+    (left, right) => left[1] - right[1],
+  )[0];
+  if (nearest[1] > threshold) petEdge = 'free';
+  else {
+    petEdge = nearest[0];
+    if (petEdge === 'left') window.setPosition(area.x, bounds.y);
+    else if (petEdge === 'right') window.setPosition(area.x + area.width - bounds.width, bounds.y);
+    else window.setPosition(bounds.x, area.y + area.height - bounds.height);
+  }
+  sendPetPlacement();
+}
+
+function applyPetScale(nextScale: 25 | 50 | 75 | 100 | 125): void {
+  petScale = nextScale;
+  if (!petWindow || petWindow.isDestroyed()) return;
+  const oldBounds = petWindow.getBounds();
+  const size = petWindowSize();
+  const area = screen.getDisplayMatching(oldBounds).workArea;
+  const x = Math.max(
+    area.x,
+    Math.min(
+      Math.round(oldBounds.x + (oldBounds.width - size.width) / 2),
+      area.x + area.width - size.width,
+    ),
+  );
+  const y = Math.max(
+    area.y,
+    Math.min(
+      Math.round(oldBounds.y + (oldBounds.height - size.height) / 2),
+      area.y + area.height - size.height,
+    ),
+  );
+  petWindow.setBounds({ x, y, ...size });
+  petWindow.webContents.setZoomFactor(nextScale / 100);
+  snapPetToEdge(petWindow);
+  savePosition(petWindow);
+}
+
+/** 显示器、DPI 或任务栏工作区变化后，把桌宠重新限制到仍然存在的工作区。 */
+function reflowPetForDisplays(): void {
+  if (!petWindow || petWindow.isDestroyed()) return;
+  const bounds = petWindow.getBounds();
+  const areas = screen.getAllDisplays().map((display) => display.workArea);
+  let position = restorePosition(bounds, areas, {
+    width: bounds.width,
+    height: bounds.height,
+  });
+  if (!position) {
+    const display = screen.getDisplayNearestPoint({
+      x: bounds.x + Math.round(bounds.width / 2),
+      y: bounds.y + Math.round(bounds.height / 2),
+    });
+    position = {
+      x: Math.max(
+        display.workArea.x,
+        Math.min(bounds.x, display.workArea.x + display.workArea.width - bounds.width),
+      ),
+      y: Math.max(
+        display.workArea.y,
+        Math.min(bounds.y, display.workArea.y + display.workArea.height - bounds.height),
+      ),
+    };
+  }
+  petWindow.setPosition(position.x, position.y);
+  snapPetToEdge(petWindow);
+  savePosition(petWindow);
+}
+
+const PET_SCALES = [25, 50, 75, 100, 125] as const;
+
+function selectPetScale(nextScale: (typeof PET_SCALES)[number]): void {
+  if (!statisticsStore) return;
+  statisticsStore.preferences.update({ petScale: nextScale });
+  applyPetScale(nextScale);
+  updateTray();
+}
+
+function petScaleMenu(): Electron.MenuItemConstructorOptions {
+  return {
+    label: `宠物大小 · ${petScale}%`,
+    submenu: PET_SCALES.map((scale) => ({
+      label: `${scale}%`,
+      type: 'radio' as const,
+      checked: scale === petScale,
+      click: () => selectPetScale(scale),
+    })),
+  };
 }
 
 function petMenuItems(): Electron.MenuItemConstructorOptions[] {
@@ -361,6 +504,7 @@ function petMenuItems(): Electron.MenuItemConstructorOptions[] {
         ignoringMouse = true;
       },
     },
+    petScaleMenu(),
     { type: 'separator' },
     {
       label: '退出 DeskPet',
@@ -422,6 +566,7 @@ function updateTray(): void {
           ignoringMouse = true;
         },
       },
+      petScaleMenu(),
       { type: 'separator' },
       {
         label: '退出',
@@ -732,15 +877,28 @@ function registerStatisticsIpc(): void {
       throw new Error('无效的外观请求');
     return statisticsStore!.appearance.update(args[0]);
   });
-  ipcMain.handle('crafting:craft', (event, ...args: unknown[]) => {
-    if (
-      !statisticsWindow ||
-      event.sender !== statisticsWindow.webContents ||
-      event.senderFrame !== statisticsWindow.webContents.mainFrame ||
-      args.length !== 1
-    )
-      throw new Error('无效的合成请求');
-    statisticsStore!.crafting.craft(args[0]);
+  ipcMain.handle('economy:purchase', (event, ...args: unknown[]) => {
+    if (args.length !== 1) throw new Error('无效的兑换请求');
+    verify(event, []);
+    statisticsStore!.economy.purchase(args[0]);
+    return statisticsStore!.appearance.get();
+  });
+  ipcMain.handle('economy:dismantle', (event, ...args: unknown[]) => {
+    if (args.length !== 2) throw new Error('无效的分解请求');
+    verify(event, []);
+    statisticsStore!.economy.dismantle(args[0], args[1]);
+    return statisticsStore!.appearance.get();
+  });
+  ipcMain.handle('economy:convert-fragments', (event, ...args: unknown[]) => {
+    if (args.length !== 1) throw new Error('无效的兑换请求');
+    verify(event, []);
+    statisticsStore!.economy.convertFragments(args[0]);
+    return statisticsStore!.appearance.get();
+  });
+  ipcMain.handle('economy:set-wishlist', (event, ...args: unknown[]) => {
+    if (args.length !== 1) throw new Error('无效的心愿请求');
+    verify(event, []);
+    statisticsStore!.economy.setWishlist(args[0]);
     return statisticsStore!.appearance.get();
   });
   ipcMain.handle('tools:list', (event, ...args: unknown[]) => {
@@ -796,16 +954,34 @@ function registerStatisticsIpc(): void {
     const keys = Object.keys(value);
     if (
       keys.length !== 1 ||
-      !['animationsEnabled', 'onboardingCompleted', 'launchAtLogin'].includes(keys[0]) ||
-      typeof (value as Record<string, unknown>)[keys[0]] !== 'boolean'
+      ![
+        'animationsEnabled',
+        'onboardingCompleted',
+        'launchAtLogin',
+        'petScale',
+        'edgeSnapEnabled',
+        'inputReactionsEnabled',
+      ].includes(keys[0])
     )
       throw new Error('无效应用设置');
+    const settingValue = (value as Record<string, unknown>)[keys[0]];
+    if (keys[0] === 'petScale') {
+      if (![25, 50, 75, 100, 125].includes(settingValue as number)) throw new Error('无效宠物缩放');
+    } else if (typeof settingValue !== 'boolean') throw new Error('无效应用设置');
     if (keys[0] === 'launchAtLogin') {
       const launchAtLogin = (value as { launchAtLogin: boolean }).launchAtLogin;
       if (launchAtLogin && !app.isPackaged) throw new Error('开发模式不能设置开机启动');
       applyLaunchAtLogin(launchAtLogin);
     }
     statisticsStore!.preferences.update(value);
+    if (keys[0] === 'petScale') {
+      applyPetScale(settingValue as 25 | 50 | 75 | 100 | 125);
+      updateTray();
+    }
+    if (keys[0] === 'edgeSnapEnabled' && petWindow && !petWindow.isDestroyed())
+      snapPetToEdge(petWindow);
+    if (keys[0] === 'animationsEnabled' || keys[0] === 'inputReactionsEnabled')
+      sendPetPreferences();
     return appSettingsSnapshot();
   });
   ipcMain.handle('settings:set-input', async (event, ...args: unknown[]) => {
@@ -849,7 +1025,7 @@ function registerStatisticsIpc(): void {
     const choice = dialog.showMessageBoxSync(statisticsWindow!, {
       type: 'warning',
       message: '清除全部键鼠统计？',
-      detail: '此操作无法撤销。',
+      detail: '此操作无法撤销；成长、装扮掉落进度和背包不会被清除。',
       buttons: ['取消', '清除'],
       defaultId: 0,
       cancelId: 0,
@@ -886,7 +1062,7 @@ function registerStatisticsIpc(): void {
 function createWindow(): void {
   const position = loadPosition();
   const window = new BrowserWindow({
-    ...SIZE,
+    ...petWindowSize(),
     ...position,
     frame: false,
     transparent: true,
@@ -902,6 +1078,11 @@ function createWindow(): void {
     },
   });
   petWindow = window;
+  window.webContents.on('did-finish-load', () => {
+    window.webContents.setZoomFactor(petScale / 100);
+    sendPetPlacement();
+    sendPetPreferences();
+  });
   window.setIgnoreMouseEvents(true, { forward: true });
   setInterval(() => {
     if (window.isDestroyed() || petDragging) return;
@@ -977,6 +1158,7 @@ else {
       },
     });
     inputPreferences = readInputPreferences(inputPreferencesPath());
+    petScale = statisticsStore.preferences.get().petScale;
     try {
       applyLaunchAtLogin(statisticsStore.preferences.get().launchAtLogin);
     } catch (error) {
@@ -984,6 +1166,9 @@ else {
       statisticsStore.preferences.update({ launchAtLogin: false });
     }
     createWindow();
+    screen.on('display-added', reflowPetForDisplays);
+    screen.on('display-removed', reflowPetForDisplays);
+    screen.on('display-metrics-changed', reflowPetForDisplays);
     tray = new Tray(nativeImage.createFromDataURL(TRAY_ICON));
     updateTray();
     if (!statisticsStore.preferences.get().onboardingCompleted)

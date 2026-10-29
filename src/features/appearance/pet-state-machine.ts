@@ -4,8 +4,13 @@ import type { PetState, PetStateSignals } from '../../shared/types/pet';
 export function resolvePetState(signals: PetStateSignals): PetState {
   if (signals.dragging) return 'dragging';
   if (signals.levelUp) return 'levelup';
+  if (signals.celebratingDrop) return 'drop';
+  if (signals.inputReaction) return signals.inputReaction;
   if (signals.focus) return 'focus';
   if (signals.resting) return 'rest';
   if (signals.sleeping) return 'sleep';
+  if (signals.edge === 'bottom') return 'edge-bottom';
+  if (signals.edge === 'left') return 'edge-left';
+  if (signals.edge === 'right') return 'edge-right';
   return 'idle';
 }

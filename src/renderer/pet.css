@@ -1,7 +1,7 @@
 /*
  * 桌宠悬浮窗样式：220×220 透明窗口，所有坐标以舞台左上角为基准。
  * 类名统一使用 companion- 前缀，避免与设置页/旧版桌宠样式互相覆盖。
- * 层级约定：场景背景 0 → 背景装饰 1 → 角色 2 → 饰品 3 → 前景装饰 4 → 台词气泡 6。
+ * 层级约定：透明地毯 0 → 背部饰品 1 → 角色 2 → 其他饰品 3 → 台词气泡 6。
  */
 .companion-stage {
   position: relative;
@@ -59,10 +59,15 @@
 .companion-scene-ground {
   position: absolute;
   z-index: 0;
-  right: 0;
-  bottom: 0;
-  left: 0;
-  height: 34%;
+  right: 20px;
+  bottom: 8px;
+  left: 20px;
+  height: 54px;
+  border: 5px solid color-mix(in srgb, var(--ground-accent, white) 75%, transparent);
+  border-radius: 50%;
+  box-shadow:
+    inset 0 0 0 3px color-mix(in srgb, var(--ground-accent, white) 35%, transparent),
+    0 7px 10px rgb(55 39 31 / 16%);
   pointer-events: none;
 }
 
@@ -154,6 +159,33 @@
   animation: companion-level-up 0.6s ease-in-out 5;
 }
 
+.companion-state-keyboard {
+  animation: companion-keyboard 0.28s ease-in-out 3;
+}
+
+.companion-state-mouse {
+  animation: companion-mouse 0.32s ease-in-out 2;
+}
+
+.companion-state-drop {
+  animation: companion-drop 0.52s ease-in-out 5;
+}
+
+.companion-state-edge-bottom {
+  animation: companion-edge-bottom 3s ease-in-out infinite;
+  transform-origin: 50% 100%;
+}
+
+.companion-state-edge-left {
+  animation: companion-edge-left 2.8s ease-in-out infinite;
+  transform-origin: 0 60%;
+}
+
+.companion-state-edge-right {
+  animation: companion-edge-right 2.8s ease-in-out infinite;
+  transform-origin: 100% 60%;
+}
+
 .companion-state-dragging {
   animation: none;
   transform: rotate(-3deg) scale(0.98);
@@ -195,6 +227,46 @@
   50% {
     transform: translateY(-10px);
     filter: drop-shadow(0 0 12px #f9d24c);
+  }
+}
+
+@keyframes companion-keyboard {
+  50% {
+    transform: translateY(2px) scaleX(1.025);
+  }
+}
+
+@keyframes companion-mouse {
+  50% {
+    transform: rotate(3deg) translateY(-2px);
+  }
+}
+
+@keyframes companion-drop {
+  40% {
+    transform: translateY(-12px) rotate(-4deg) scale(1.05);
+    filter: drop-shadow(0 0 12px #ffd768);
+  }
+  70% {
+    transform: translateY(-5px) rotate(4deg);
+  }
+}
+
+@keyframes companion-edge-bottom {
+  50% {
+    transform: translateY(4px) scaleY(0.96);
+  }
+}
+
+@keyframes companion-edge-left {
+  50% {
+    transform: translateX(-5px) rotate(-2deg);
+  }
+}
+
+@keyframes companion-edge-right {
+  50% {
+    transform: translateX(5px) rotate(2deg);
   }
 }
 

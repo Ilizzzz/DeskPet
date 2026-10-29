@@ -5,6 +5,9 @@ type PreferenceRow = {
   animations_enabled: number;
   onboarding_completed: number;
   launch_at_login: number;
+  pet_scale: number;
+  edge_snap_enabled: number;
+  input_reactions_enabled: number;
 };
 
 export class AppPreferencesService {
@@ -18,6 +21,9 @@ export class AppPreferencesService {
       animationsEnabled: row.animations_enabled === 1,
       onboardingCompleted: row.onboarding_completed === 1,
       launchAtLogin: row.launch_at_login === 1,
+      petScale: row.pet_scale as 25 | 50 | 75 | 100 | 125,
+      edgeSnapEnabled: row.edge_snap_enabled === 1,
+      inputReactionsEnabled: row.input_reactions_enabled === 1,
     };
   }
 
@@ -28,18 +34,31 @@ export class AppPreferencesService {
     const keys = Object.keys(change);
     if (
       keys.length !== 1 ||
-      !['animationsEnabled', 'onboardingCompleted', 'launchAtLogin'].includes(keys[0]) ||
-      typeof (change as Record<string, unknown>)[keys[0]] !== 'boolean'
+      ![
+        'animationsEnabled',
+        'onboardingCompleted',
+        'launchAtLogin',
+        'petScale',
+        'edgeSnapEnabled',
+        'inputReactionsEnabled',
+      ].includes(keys[0])
     )
       throw new Error('无效应用设置');
+    const rawValue = (change as Record<string, unknown>)[keys[0]];
+    if (keys[0] === 'petScale') {
+      if (![25, 50, 75, 100, 125].includes(rawValue as number)) throw new Error('无效宠物缩放');
+    } else if (typeof rawValue !== 'boolean') throw new Error('无效应用设置');
     const column = {
       animationsEnabled: 'animations_enabled',
       onboardingCompleted: 'onboarding_completed',
       launchAtLogin: 'launch_at_login',
+      petScale: 'pet_scale',
+      edgeSnapEnabled: 'edge_snap_enabled',
+      inputReactionsEnabled: 'input_reactions_enabled',
     }[keys[0]];
     this.db
       .prepare(`UPDATE app_preferences SET ${column} = ? WHERE id = 1`)
-      .run((change as Record<string, boolean>)[keys[0]] ? 1 : 0);
+      .run(typeof rawValue === 'boolean' ? (rawValue ? 1 : 0) : (rawValue as number));
     return this.get();
   }
 }

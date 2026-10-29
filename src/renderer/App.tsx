@@ -5,16 +5,19 @@ import {
   useState,
   type MouseEvent as ReactMouseEvent,
   type PointerEvent as ReactPointerEvent,
+  type CSSProperties,
 } from 'react';
 import type { Appearance, ItemSlot } from '../shared/types/appearance';
+import type { PetActivityEvent } from '../shared/types/economy';
 import { PET_ART_LEFT, PET_ART_SIZE, PET_ART_TOP, PET_WINDOW_SIZE } from '../shared/constants/pet';
 import type { ItemAnchor } from '../data/catalogs/appearance';
 import {
   appearanceAssets,
   CHARACTERS,
-  ITEM_ANCHORS,
   ITEMS,
   SCENES,
+  itemById,
+  resolvedAnchor,
 } from '../data/catalogs/appearance';
 import { resolvePetState } from '../features/appearance/pet-state-machine';
 import './pet.css';
@@ -92,6 +95,10 @@ export function App() {
   const [dragging, setDragging] = useState(false);
   const [focus, setFocus] = useState(false);
   const [animationsEnabled, setAnimationsEnabled] = useState(true);
+  const [inputReactionsEnabled, setInputReactionsEnabled] = useState(true);
+  const [inputReaction, setInputReaction] = useState<'keyboard' | 'mouse' | null>(null);
+  const [celebratingDrop, setCelebratingDrop] = useState(false);
+  const [edge, setEdge] = useState<'free' | 'bottom' | 'left' | 'right'>('free');
   const [speech, setSpeech] = useState<string>();
   const [artworkFailed, setArtworkFailed] = useState(false);
   const previousLevel = useRef<number | undefined>(undefined);
@@ -102,6 +109,10 @@ export function App() {
   const clickTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const allowRandomAction = useRef(true);
   const dragSession = useRef<DragSession | undefined>(undefined);
+  const inputTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const dropTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const inputReactionsRef = useRef(true);
+  const animationsRef = useRef(true);
 
   const hideSpeech = () => {
     if (speechTimer.current) clearTimeout(speechTimer.current);
@@ -167,6 +178,7 @@ export function App() {
           setAppearance(nextAppearance);
           setFocus(nextFocus.status === 'running' && nextFocus.kind === 'focus');
           setAnimationsEnabled(settings.animationsEnabled);
+          setInputReactionsEnabled(settings.inputReactionsEnabled);
         })
         .catch((error: unknown) => console.error('无法读取桌宠状态', error));
     };
@@ -191,8 +203,49 @@ export function App() {
       if (restTimer.current) clearTimeout(restTimer.current);
       if (speechTimer.current) clearTimeout(speechTimer.current);
       if (clickTimer.current) clearTimeout(clickTimer.current);
+      if (inputTimer.current) clearTimeout(inputTimer.current);
+      if (dropTimer.current) clearTimeout(dropTimer.current);
     };
   }, []);
+
+  useEffect(() => {
+    inputReactionsRef.current = inputReactionsEnabled;
+  }, [inputReactionsEnabled]);
+
+  useEffect(() => {
+    animationsRef.current = animationsEnabled;
+  }, [animationsEnabled]);
+
+  useEffect(
+    () =>
+      window.desktopApi.onPetActivity((activity: PetActivityEvent) => {
+        if (activity.edge) setEdge(activity.edge);
+        if (typeof activity.animationsEnabled === 'boolean')
+          setAnimationsEnabled(activity.animationsEnabled);
+        if (typeof activity.inputReactionsEnabled === 'boolean')
+          setInputReactionsEnabled(activity.inputReactionsEnabled);
+        if (activity.drops.length > 0) {
+          const latest = activity.drops[activity.drops.length - 1];
+          setCelebratingDrop(true);
+          if (dropTimer.current) clearTimeout(dropTimer.current);
+          dropTimer.current = setTimeout(() => setCelebratingDrop(false), 2600);
+          const item = itemById(latest.itemId);
+          showSpeech(`发现了${item?.name ?? '新装扮'}！`);
+          void window.desktopApi.getAppearance().then(setAppearance);
+          return;
+        }
+        if (
+          !animationsRef.current ||
+          !inputReactionsRef.current ||
+          activity.keyboard + activity.mouse === 0
+        )
+          return;
+        setInputReaction(activity.keyboard >= activity.mouse ? 'keyboard' : 'mouse');
+        if (inputTimer.current) clearTimeout(inputTimer.current);
+        inputTimer.current = setTimeout(() => setInputReaction(null), 900);
+      }),
+    [],
+  );
 
   useEffect(() => {
     allowRandomAction.current = !focus && !sleeping;
@@ -220,14 +273,15 @@ export function App() {
 
   const equipped = useMemo(() => {
     if (!appearance) return [];
-    const anchors = ITEM_ANCHORS[appearance.character] ?? ITEM_ANCHORS.cat;
     // 叠放顺序：背部最底、头部最上；同一 z-index 内依靠 DOM 顺序决定上下。
     const stackOrder: readonly ItemSlot[] = ['back', 'hand', 'neck', 'face', 'head'];
     return stackOrder.flatMap((slot) => {
       const itemId = appearance.equipped[slot];
       if (!itemId) return [];
       const item = ITEMS.find((entry) => entry.id === itemId && entry.slot === slot);
-      return item ? [{ slot, item, anchor: anchors[slot] }] : [];
+      return item
+        ? [{ slot, item, anchor: resolvedAnchor(appearance.character, slot, item.id) }]
+        : [];
     });
   }, [appearance]);
 
@@ -237,6 +291,9 @@ export function App() {
     focus,
     resting,
     sleeping,
+    inputReaction,
+    celebratingDrop,
+    edge,
   });
   const petName = character?.name ?? '桌宠';
 
@@ -331,7 +388,12 @@ export function App() {
       {scene.theme.ground && (
         <div
           className="companion-scene-ground"
-          style={{ background: scene.theme.ground }}
+          style={
+            {
+              background: scene.theme.ground,
+              '--ground-accent': scene.theme.groundAccent,
+            } as CSSProperties
+          }
           aria-hidden="true"
         />
       )}

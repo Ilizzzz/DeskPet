@@ -1,7 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 const exposeInMainWorld = vi.hoisted(() => vi.fn());
 const invoke = vi.hoisted(() => vi.fn());
-vi.mock('electron', () => ({ contextBridge: { exposeInMainWorld }, ipcRenderer: { invoke } }));
+vi.mock('electron', () => ({
+  contextBridge: { exposeInMainWorld },
+  ipcRenderer: { invoke, on: vi.fn(), removeListener: vi.fn() },
+}));
 describe('preload bridge', () => {
   beforeEach(() => {
     vi.resetModules();
@@ -18,7 +21,7 @@ describe('preload bridge', () => {
       'clearStatistics',
       'configureSedentary',
       'configureWater',
-      'craftItem',
+      'convertFragments',
       'createAnniversary',
       'createCountdown',
       'createNote',
@@ -47,12 +50,14 @@ describe('preload bridge', () => {
       'listNotes',
       'listTodos',
       'listTools',
+      'onPetActivity',
       'openAppFolder',
       'openDashboard',
       'openNote',
       'openPetMenu',
       'pauseFocus',
       'platform',
+      'purchaseItem',
       'resetAllData',
       'resetSedentary',
       'resumeFocus',
@@ -61,6 +66,7 @@ describe('preload bridge', () => {
       'setFocusSound',
       'setInputTracking',
       'setToolEnabled',
+      'setWishlist',
       'snoozeSedentary',
       'startFocus',
       'stopFocus',

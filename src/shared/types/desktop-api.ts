@@ -13,6 +13,7 @@ import type { Countdown } from './countdown';
 import type { Todo, TodoChange } from './todo';
 import type { WaterSettings, WaterSnapshot } from './water';
 import type { AppInstallInfo, UninstallStatus } from './app-install';
+import type { PetActivityEvent } from './economy';
 
 /** 渲染进程可用的最小化平台能力集合，全部经 Preload 的 contextBridge 暴露。 */
 export interface DesktopApi {
@@ -32,8 +33,10 @@ export interface DesktopApi {
   setFocusSound(enabled: boolean): Promise<FocusSnapshot>;
   getAppearance(): Promise<Appearance>;
   setAppearance(change: AppearanceChange): Promise<Appearance>;
-  craftItem(recipeId: string): Promise<Appearance>;
-  dismantleItem(itemId: string): Promise<Appearance>;
+  purchaseItem(itemId: string): Promise<Appearance>;
+  dismantleItem(itemId: string, allowLast?: boolean): Promise<Appearance>;
+  convertFragments(amount: number): Promise<Appearance>;
+  setWishlist(itemId: string | null): Promise<Appearance>;
   listTools(): Promise<ToolState[]>;
   setToolEnabled(id: ToolId, enabled: boolean): Promise<ToolState[]>;
   getSedentary(): Promise<SedentarySnapshot>;
@@ -69,6 +72,7 @@ export interface DesktopApi {
   beginPetDrag(): Promise<void>;
   endPetDrag(): Promise<void>;
   openPetMenu(): Promise<void>;
+  onPetActivity(listener: (event: PetActivityEvent) => void): () => void;
   getAppInstallInfo(): Promise<AppInstallInfo>;
   openAppFolder(target: 'install' | 'userData'): Promise<void>;
   /** 仅安装版可用；主进程负责确认对话框和调用 Squirrel Update.exe。 */

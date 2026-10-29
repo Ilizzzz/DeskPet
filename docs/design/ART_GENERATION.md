@@ -1,8 +1,8 @@
 # Version 2 图像生成与原图落地说明
 
 本文记录 DeskPet Version 2 的动物角色和装扮怎样生成、拆分、校准与登记，也记录用户原图
-角色的无生成式处理流程。生成具有随机性；复用提示词不保证得到完全相同的像素，正式入库
-前必须重新做透明度、穿戴位置和小尺寸可读性检查。
+头部与生成身体的合成流程。生成具有随机性；复用提示词不保证得到完全相同的像素，正式
+入库前必须重新做透明度、穿戴位置和小尺寸可读性检查。
 
 ## 1. 生成方式
 
@@ -28,17 +28,34 @@ areas around the head, neck, face, paws and back.
 penguin、orange tiger cub、mint-green turtle、cream-and-brown hedgehog、brown chipmunk。八张图
 分别生成后再统一缩放，不从一张图复制改色。
 
-### 用户原图角色
+### 原图头部与生成身体合成
 
-`math_master` 不使用 ImageGen，也不进行动漫化。处理步骤如下：
+`math_master` 不进行动漫化，最终头部不使用 ImageGen 输出。处理步骤如下：
 
-1. 将用户提供的原文件逐字节复制到
-   `art_sources/characters/math_master_original.png`，复制前后校验 SHA-256 一致；
-2. 保持 163×207 原图的完整画面与长宽比，不裁切、不去背景、不重绘人物；
-3. 使用高质量双三次插值等比放大到 256 像素高，水平居中放入 256×256 RGBA 画布；
-4. 只在左右不足区域使用透明像素补齐，输出
+1. 将用户提供的 163×207 原文件逐字节复制到
+   `art_sources/characters/math_master_original.png`，复制时校验 SHA-256 一致；
+2. 使用内置 ImageGen 生成透明背景、深蓝衬衫、深色长裤和自然盘坐姿势的写实身体，原图仅
+   作为身份和服装参考；结果保存为
+   `art_sources/characters/math_master_body_generated.png`；
+3. 不采用生成稿中的脸。`scripts/build-math-master-asset.ps1` 按背景颜色和人物连通区域从原图
+   抠出头部，去除蓝色椭圆、白底和浅蓝底；
+4. 脚本把生成稿头部区域清空，再覆盖原图头部像素，确保五官、表情、发型和头型不经过
+   生成式重绘；
+5. 将合成结果高质量等比缩放到 256×256 RGBA 透明画布，输出
    `public/assets/characters/math_master.png`；
-5. 为头部、颈部、面部、手持和背部建立默认锚点，仍允许用户在外观页按饰品手动微调。
+6. 按全身轮廓重新校准头部、颈部、面部、手持和背部锚点，用户仍可按饰品手动微调。
+
+生成身体所用提示词的核心约束为：
+
+```text
+Use case: identity-preserve
+Asset type: transparent 2D character asset for a Windows desktop pet
+Primary request: remove the oval border and background, then add a naturally proportioned
+seated full body wearing a plain dark navy collared shirt, dark trousers and dark shoes.
+Style/medium: clean realistic photo composite, not anime, not cartoon, not 3D.
+Composition/framing: centered full body, compact seated pose, transparent margin.
+Constraints: preserve the supplied identity; no frame, backdrop, props, text or watermark.
+```
 
 ## 2. 装扮网格提示词
 
@@ -75,8 +92,8 @@ Front or slight 3/4 view. No pet, text, cell borders, opaque background, waterma
 5. 生成 6 列装扮联系表和 4 列动物角色联系表，检查裁切、串格、透明杂点和小尺寸轮廓。
 
 最终角色写入 `public/assets/characters/`，装扮写入 `public/assets/items/`。原始生成图位于工具
-运行缓存，不是发布依赖；用户提供的原始头像则单独保存在 `art_sources/characters/`，避免
-桌面源文件删除后无法复现正式资源。
+运行缓存，不是发布依赖；`math_master` 的原始头像和选定身体稿单独保存在
+`art_sources/characters/`，避免桌面源文件或工具缓存删除后无法复现正式资源。
 
 ## 4. 穿戴校准
 
@@ -102,7 +119,7 @@ npm run typecheck
 npm test
 ```
 
-`update-v2-art-registry.mjs` 会更新生成素材与用户原图角色正式资源的字节数和 SHA-256；
+`update-v2-art-registry.mjs` 会更新生成素材与原图合成角色正式资源的字节数和 SHA-256；
 `validate:assets` 会检查文件
 存在、PNG 结构、256×256、alpha、非空画面、来源登记和文档路径。通过自动校验不等于完成
 视觉验收，还必须在实际透明窗口中检查地毯边缘、饰品遮挡、缩放和高 DPI 表现。

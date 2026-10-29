@@ -7,9 +7,10 @@
 
 - 8 个动物角色 `public/assets/characters/*.png` 与 30 个 `public/assets/items/*.png` 由
   DeskPet 项目使用 OpenAI ImageGen 专门生成。
-- `public/assets/characters/math_master.png` 来自用户提供的原始头像；原始文件保存于
-  `art_sources/characters/math_master_original.png`，正式资源只做等比缩放和透明留白，未裁切、
-  重绘或进行生成式编辑。
+- `public/assets/characters/math_master.png` 的头部来自用户原图，原始文件保存于
+  `art_sources/characters/math_master_original.png`；写实盘坐身体由 OpenAI ImageGen 生成并保存为
+  `art_sources/characters/math_master_body_generated.png`。`scripts/build-math-master-asset.ps1`
+  去除原图边框和底色、清除生成稿头部，再以原始头部像素完成透明合成。
 - 角色按单张透明立绘生成；装扮按五张透明网格图生成后拆分、等比缩放并输出为
   256×256 RGBA PNG。
 - 生成日期：2026-10-29。

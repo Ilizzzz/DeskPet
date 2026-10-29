@@ -9,8 +9,9 @@
 | `icons/`      | 界面、工具与首页指标图标             | 22   |
 | `licenses/`   | 第三方许可证、逐文件来源与校验清单   | -    |
 
-8 个动物角色和装扮为 Version 2 专门生成的二次元 2D 素材；“数学硕士”保留用户提供的
-原始头像；界面图标来自 **Microsoft Fluent Emoji**（MIT License，作者 Microsoft Corporation）。
+8 个动物角色和装扮为 Version 2 专门生成的二次元 2D 素材；“数学硕士”保留用户原图
+头部并使用生成的写实身体；界面图标来自 **Microsoft Fluent Emoji**（MIT License，作者
+Microsoft Corporation）。
 
 - 许可证原文：`licenses/fluent-emoji-LICENSE.txt`
 - 逐文件原始 URL 与 SHA-256：`licenses/sources.json`、`licenses/sources.md`

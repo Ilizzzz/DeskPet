@@ -26,16 +26,13 @@ describe('checkin', () => {
       checkedInToday: false,
       streak: 0,
       nextStreak: 1,
-      todayReward: [
-        { type: 'coins', amount: 15 },
-        { type: 'fragments', amount: 1 },
-      ],
+      todayReward: [{ type: 'coins', amount: 15 }],
     });
     const after = service.checkIn(day);
     expect(after).toMatchObject({ checkedInToday: true, streak: 1, nextStreak: 2 });
-    expect(wallet(db)).toMatchObject({ balance: 15, fragments: 1 });
+    expect(wallet(db)).toMatchObject({ balance: 15, fragments: 0 });
     expect(() => service.checkIn(day)).toThrow('今天已经签到');
-    expect(wallet(db)).toMatchObject({ balance: 15, fragments: 1 });
+    expect(wallet(db)).toMatchObject({ balance: 15, fragments: 0 });
   });
 
   it('keeps the stored reward as JSON and reads it back for today status', () => {
@@ -43,13 +40,9 @@ describe('checkin', () => {
     const service = new CheckinService(db);
     service.checkIn(new Date(2026, 0, 1, 8));
     const row = db.prepare('SELECT reward FROM checkins').get() as unknown as { reward: string };
-    expect(JSON.parse(row.reward)).toEqual([
-      { type: 'coins', amount: 15 },
-      { type: 'fragments', amount: 1 },
-    ]);
+    expect(JSON.parse(row.reward)).toEqual([{ type: 'coins', amount: 15 }]);
     expect(service.status(new Date(2026, 0, 1, 22)).todayReward).toEqual([
       { type: 'coins', amount: 15 },
-      { type: 'fragments', amount: 1 },
     ]);
   });
 
@@ -60,8 +53,8 @@ describe('checkin', () => {
       service.checkIn(new Date(2026, 0, day, 10));
       expect(service.status(new Date(2026, 0, day, 12)).streak).toBe(day);
     }
-    // 15+20+25+30+35+40+45 = 210 星星币；前 6 天各 1 碎片，第 7 天 3 碎片。
-    expect(wallet(db)).toMatchObject({ balance: 210, fragments: 9 });
+    // 七天基础奖励 210 星星币，第 7 天额外 40。
+    expect(wallet(db)).toMatchObject({ balance: 250, fragments: 0 });
   });
 
   it('resets the streak after a gap and starts over from 1', () => {
@@ -71,10 +64,7 @@ describe('checkin', () => {
     service.checkIn(new Date(2026, 0, 2, 10));
     const missed = service.status(new Date(2026, 0, 4, 10));
     expect(missed).toMatchObject({ checkedInToday: false, streak: 0, nextStreak: 1 });
-    expect(missed.todayReward).toEqual([
-      { type: 'coins', amount: 15 },
-      { type: 'fragments', amount: 1 },
-    ]);
+    expect(missed.todayReward).toEqual([{ type: 'coins', amount: 15 }]);
     expect(service.checkIn(new Date(2026, 0, 4, 10))).toMatchObject({
       checkedInToday: true,
       streak: 1,

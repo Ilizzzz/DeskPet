@@ -22,6 +22,9 @@ export interface Appearance {
   unlocks: string[];
   balance: number;
   fragments: number;
+  discoveredItemIds: string[];
+  wishlistItemId: string | null;
+  dropProgress: import('./economy').DropProgress;
 }
 
 export interface AppearanceChange {

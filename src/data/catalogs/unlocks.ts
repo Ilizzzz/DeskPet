@@ -1,6 +1,7 @@
 import type { UnlockEntry } from '../../shared/types/unlock';
 import { CHARACTERS, ITEMS, SCENES, UI_ICONS } from './appearance';
 import { TOOL_DEFINITIONS } from './tools';
+import { itemEconomy } from './economy';
 
 /** 同级条目的展示顺序：伙伴 → 场景 → 装扮 → 工具。 */
 const CATEGORY_ORDER: Readonly<Record<UnlockEntry['category'], number>> = {
@@ -34,16 +35,18 @@ const ENTRIES: readonly UnlockEntry[] = [
     level: scene.unlockLevel,
     icon: sceneIcon(scene.decorations),
   })),
-  ...ITEMS.map((item): UnlockEntry => ({
-    id: item.id,
-    category: 'item',
-    name: item.name,
-    description: item.description,
-    level: item.unlockLevel,
-    icon: item.asset,
-    slot: item.slot,
-    rarity: item.rarity,
-  })),
+  ...ITEMS.filter((item) => itemEconomy(item.id)?.source === 'milestone').map(
+    (item): UnlockEntry => ({
+      id: item.id,
+      category: 'item',
+      name: item.name,
+      description: item.description,
+      level: item.unlockLevel,
+      icon: item.asset,
+      slot: item.slot,
+      rarity: item.rarity,
+    }),
+  ),
   ...TOOL_DEFINITIONS.map((tool): UnlockEntry => ({
     id: tool.id,
     category: 'tool',

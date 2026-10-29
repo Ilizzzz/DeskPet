@@ -5,14 +5,10 @@ import { localDate } from '../../shared/types/statistics';
 import { grantReward } from '../../services/rewards/rewards';
 
 /**
- * 签到奖励：星星币 = 10 + 5 × min(连续天数, 7)，每天 1 碎片，
- * 每连续 7 天额外 +2 碎片（即第 7、14、21… 天发 3 碎片）。
+ * 签到奖励统一使用星星币；连续第 7 天额外获得 40 枚。
  */
 export function checkinReward(streak: number): RewardSpec[] {
-  return [
-    { type: 'coins', amount: 10 + 5 * Math.min(streak, 7) },
-    { type: 'fragments', amount: streak % 7 === 0 ? 3 : 1 },
-  ];
+  return [{ type: 'coins', amount: 10 + 5 * Math.min(streak, 7) + (streak % 7 === 0 ? 40 : 0) }];
 }
 
 function yesterdayOf(now: Date): string {

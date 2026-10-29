@@ -7,7 +7,6 @@ export type AchievementCondition =
   | { type: 'focusSessions'; target: number }
   | { type: 'level'; target: number }
   | { type: 'uniqueItems'; target: number }
-  | { type: 'craftCount'; target: number }
   | { type: 'checkinStreak'; target: number }
   | { type: 'scenes'; target: number }
   | { type: 'characters'; target: number };

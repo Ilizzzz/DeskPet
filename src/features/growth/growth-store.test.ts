@@ -47,9 +47,9 @@ describe('growth database integration', () => {
       store.focus.start('focus', 1, startedAt);
       store.completeFocusIfDue(startedAt + 60_000);
     }
-    // 每天 2 枚星星币；每 3 次专注额外 1 枚星光碎片，6 次共 60 EXP。
+    // 每次专注 2 枚星星币，6 次共 60 EXP。
     expect(store.growth()).toMatchObject({ level: 1, experience: 60, totalExperience: 60 });
-    expect(store.appearance.get()).toMatchObject({ balance: 12, fragments: 2 });
+    expect(store.appearance.get()).toMatchObject({ balance: 12, fragments: 0 });
     store.close();
   });
 
@@ -58,8 +58,7 @@ describe('growth database integration', () => {
     store.add({ date: '2026-01-03', keyboardCount: 25 * 1000, mouseCount: 0, activeSeconds: 60 });
     expect(store.growth().totalExperience).toBe(1000);
     expect(store.growth().level).toBe(6);
-    // 等级奖励 2/4/5 给星星币，3/5/6 给碎片：120 星星币 + 3 星光碎片。
-    expect(store.appearance.get()).toMatchObject({ balance: 120, fragments: 3 });
+    expect(store.appearance.get()).toMatchObject({ balance: 185, fragments: 0 });
     store.close();
   });
 });

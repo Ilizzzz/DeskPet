@@ -2,6 +2,7 @@ import type { DatabaseSync } from 'node:sqlite';
 import type { Appearance, EquippedItems, ItemSlot } from '../../shared/types/appearance';
 import { ITEM_SLOTS } from '../../shared/types/appearance';
 import { SCENES, characterById, itemById } from '../../data/catalogs/appearance';
+import { KEYBOARD_COUNT_PER_DROP } from '../../data/catalogs/economy';
 
 interface AppearanceRow extends EquippedItems {
   character: string;
@@ -35,6 +36,22 @@ export class AppearanceService {
     const growth = this.db.prepare('SELECT level FROM growth_state WHERE id = 1').get() as {
       level: number;
     };
+    const discoveredItemIds = (
+      this.db
+        .prepare('SELECT item_id AS itemId FROM item_discoveries ORDER BY item_id')
+        .all() as unknown as { itemId: string }[]
+    ).map((entry) => entry.itemId);
+    const wishlist = this.db
+      .prepare('SELECT item_id AS itemId FROM item_wishlist WHERE id = 1')
+      .get() as { itemId: string | null };
+    const dropState = this.db
+      .prepare('SELECT keyboard_remainder AS keyboardRemainder FROM input_drop_state WHERE id = 1')
+      .get() as { keyboardRemainder: number };
+    const latestDrop = this.db
+      .prepare(
+        'SELECT id, item_id AS itemId, created_at AS createdAt FROM drop_events ORDER BY id DESC LIMIT 1',
+      )
+      .get() as unknown as import('../../shared/types/economy').DropEvent | undefined;
     return {
       level: growth.level,
       character: row.character,
@@ -50,13 +67,20 @@ export class AppearanceService {
       unlocks,
       balance: wallet.balance,
       fragments: wallet.fragments,
+      discoveredItemIds,
+      wishlistItemId: wishlist.itemId,
+      dropProgress: {
+        keyboardRemainder: dropState.keyboardRemainder,
+        keyboardPerDrop: KEYBOARD_COUNT_PER_DROP,
+        latestDrop: latestDrop ?? null,
+      },
     };
   }
 
   /**
    * 一次只接受一个变更：character / scene / equipped。
    *
-   * 角色与场景要求等级达标且已在 unlocks 中；装扮要求等级达标、槽位匹配，
+   * 角色与场景要求等级达标且已在 unlocks 中；装扮只要求槽位匹配，
    * 且背包里至少有 1 件。所有校验通过后才写入，避免部分字段被修改。
    */
   update(value: unknown): Appearance {
@@ -84,7 +108,6 @@ export class AppearanceService {
           const item = itemById(change.itemId);
           if (!item) throw new Error('无效外观选项');
           if (item.slot !== change.slot) throw new Error('装扮槽位不匹配');
-          assertLevel(current.level, item.unlockLevel);
           if (
             !current.inventory.some((entry) => entry.itemId === change.itemId && entry.quantity > 0)
           )

@@ -11,7 +11,13 @@ function database(level = 1): DatabaseSync {
     CREATE TABLE growth_state(id INTEGER PRIMARY KEY, level INTEGER NOT NULL);
     INSERT INTO growth_state VALUES(1, ${level});
     CREATE TABLE wallet(id INTEGER PRIMARY KEY, balance INTEGER NOT NULL, fragments INTEGER NOT NULL DEFAULT 0);
-    INSERT INTO wallet VALUES(1, 30, 4);`);
+    INSERT INTO wallet VALUES(1, 30, 4);
+    CREATE TABLE item_discoveries(item_id TEXT PRIMARY KEY, first_acquired_at INTEGER NOT NULL);
+    CREATE TABLE item_wishlist(id INTEGER PRIMARY KEY, item_id TEXT);
+    INSERT INTO item_wishlist VALUES(1, NULL);
+    CREATE TABLE input_drop_state(id INTEGER PRIMARY KEY, keyboard_remainder INTEGER NOT NULL);
+    INSERT INTO input_drop_state VALUES(1, 120);
+    CREATE TABLE drop_events(id INTEGER PRIMARY KEY, item_id TEXT, created_at INTEGER);`);
   return db;
 }
 
@@ -28,6 +34,9 @@ describe('appearance', () => {
       unlocks: [],
       balance: 30,
       fragments: 4,
+      discoveredItemIds: [],
+      wishlistItemId: null,
+      dropProgress: { keyboardRemainder: 120, keyboardPerDrop: 1500, latestDrop: null },
     });
     db.close();
   });
@@ -70,7 +79,7 @@ describe('appearance', () => {
     db.close();
   });
 
-  it('rejects wrong slots, unowned and under-leveled items', () => {
+  it('rejects wrong slots and unowned items while allowing any owned outfit', () => {
     const db = database(10);
     const service = new AppearanceService(db);
     db.exec("INSERT INTO inventory VALUES('cap_blue', 1)");
@@ -83,9 +92,9 @@ describe('appearance', () => {
     db.exec(
       "INSERT INTO inventory VALUES('goggles_sky', 1); UPDATE growth_state SET level = 10 WHERE id = 1",
     );
-    expect(() => service.update({ equipped: { slot: 'face', itemId: 'goggles_sky' } })).toThrow(
-      '等级不足',
-    );
+    expect(service.update({ equipped: { slot: 'face', itemId: 'goggles_sky' } })).toMatchObject({
+      equipped: { face: 'goggles_sky' },
+    });
     expect(() => service.update({ equipped: { slot: 'face', itemId: 'unknown' } })).toThrow(
       '无效外观选项',
     );

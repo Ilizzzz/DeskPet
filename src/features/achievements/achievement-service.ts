@@ -79,8 +79,8 @@ export class AchievementService {
       mouse: input.mouse,
       focusSessions: this.count('SELECT COUNT(*) AS count FROM focus_sessions'),
       level,
-      uniqueItems: this.count('SELECT COUNT(*) AS count FROM inventory WHERE quantity > 0'),
-      craftCount: this.count('SELECT COUNT(*) AS count FROM crafting_transactions'),
+      // 发现记录不会因分解最后一件而消失，收藏成就不会倒退。
+      uniqueItems: this.count('SELECT COUNT(*) AS count FROM item_discoveries'),
       // 成就一旦达成不应因断签而丢失，因此取历史最长连续天数。
       checkinStreak: (
         this.db

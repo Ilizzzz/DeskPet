@@ -96,12 +96,6 @@ export function registerFeatureIpc(context: FeatureIpcContext): void {
     verifyDashboard(0)(event, args);
     return context.store().water.drink();
   });
-  ipcMain.handle('crafting:dismantle', (event, ...args: unknown[]) => {
-    verifyDashboard(1)(event, args);
-    context.store().crafting.dismantle(args[0]);
-    return context.store().appearance.get();
-  });
-
   const store = () => {
     try {
       return context.store();

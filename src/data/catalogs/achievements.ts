@@ -1,7 +1,7 @@
 import type { AchievementDefinition } from '../../shared/types/achievement';
 
 /**
- * 12 个成就，覆盖输入、专注、等级、收藏、合成、签到和伙伴/场景收集。
+ * 12 个成就，覆盖输入、专注、等级、收藏、签到和伙伴/场景收集。
  *
  * 图标复用 public/assets/icons 下已登记的通用图标，不引入额外素材；
  * 进度与领取状态由 AchievementService 结合数据库计算。
@@ -23,7 +23,7 @@ export const ACHIEVEMENTS: readonly AchievementDefinition[] = [
     condition: { type: 'keyboard', target: 100000 },
     rewards: [
       { type: 'coins', amount: 60 },
-      { type: 'fragments', amount: 1 },
+      { type: 'coins', amount: 20 },
     ],
   },
   {
@@ -42,7 +42,7 @@ export const ACHIEVEMENTS: readonly AchievementDefinition[] = [
     condition: { type: 'focusSessions', target: 5 },
     rewards: [
       { type: 'coins', amount: 30 },
-      { type: 'fragments', amount: 1 },
+      { type: 'coins', amount: 20 },
     ],
   },
   {
@@ -53,7 +53,7 @@ export const ACHIEVEMENTS: readonly AchievementDefinition[] = [
     condition: { type: 'focusSessions', target: 30 },
     rewards: [
       { type: 'coins', amount: 100 },
-      { type: 'fragments', amount: 3 },
+      { type: 'coins', amount: 60 },
     ],
   },
   {
@@ -62,7 +62,7 @@ export const ACHIEVEMENTS: readonly AchievementDefinition[] = [
     description: '成长等级达到 10 级。',
     icon: 'assets/icons/levelup.png',
     condition: { type: 'level', target: 10 },
-    rewards: [{ type: 'fragments', amount: 2 }],
+    rewards: [{ type: 'coins', amount: 40 }],
   },
   {
     id: 'level_25',
@@ -72,23 +72,24 @@ export const ACHIEVEMENTS: readonly AchievementDefinition[] = [
     condition: { type: 'level', target: 25 },
     rewards: [
       { type: 'coins', amount: 100 },
-      { type: 'fragments', amount: 5 },
+      { type: 'coins', amount: 100 },
     ],
   },
   {
     id: 'collect_10',
     name: '收藏家',
-    description: '拥有 10 种不同的装扮。',
+    description: '曾获得 10 种不同的装扮。',
     icon: 'assets/icons/appearance.png',
     condition: { type: 'uniqueItems', target: 10 },
-    rewards: [{ type: 'fragments', amount: 3 }],
+    rewards: [{ type: 'coins', amount: 60 }],
   },
   {
     id: 'craft_3',
-    name: '合成学徒',
-    description: '累计合成 3 次。',
-    icon: 'assets/icons/tools.png',
-    condition: { type: 'craftCount', target: 3 },
+    // 沿用 V1 成就 ID，确保已经领取的状态不变；未完成者改为 V2 可达成的发现目标。
+    name: '初见收藏',
+    description: '曾获得 3 种不同的装扮。',
+    icon: 'assets/icons/appearance.png',
+    condition: { type: 'uniqueItems', target: 3 },
     rewards: [{ type: 'coins', amount: 40 }],
   },
   {
@@ -97,7 +98,7 @@ export const ACHIEVEMENTS: readonly AchievementDefinition[] = [
     description: '连续签到 7 天。',
     icon: 'assets/icons/checkin.png',
     condition: { type: 'checkinStreak', target: 7 },
-    rewards: [{ type: 'fragments', amount: 3 }],
+    rewards: [{ type: 'coins', amount: 60 }],
   },
   {
     id: 'scene_3',
@@ -113,6 +114,6 @@ export const ACHIEVEMENTS: readonly AchievementDefinition[] = [
     description: '拥有 3 个角色。',
     icon: 'assets/icons/app.png',
     condition: { type: 'characters', target: 3 },
-    rewards: [{ type: 'fragments', amount: 3 }],
+    rewards: [{ type: 'coins', amount: 60 }],
   },
 ];

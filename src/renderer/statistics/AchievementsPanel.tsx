@@ -46,7 +46,7 @@ export function AchievementsPanel() {
         <div>
           <span className="eyebrow">ACHIEVEMENTS</span>
           <h2>成就</h2>
-          <p>完成成长目标后领取星星币与星光碎片，奖励只会发放一次。</p>
+          <p>完成成长目标后领取星星币，奖励只会发放一次。</p>
         </div>
         <span className="privacy-chip">可领取 {claimable}</span>
       </div>

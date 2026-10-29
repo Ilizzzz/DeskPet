@@ -30,7 +30,7 @@ export const TOOL_DEFINITIONS: readonly ToolDefinition[] = [
   {
     id: 'notes',
     name: '桌面便签',
-    description: '随手记事，自动保存到本机。',
+    description: '随手记事，输入内容会自动保存。',
     icon: 'assets/icons/notes.png',
     category: 'productivity',
     defaultEnabled: true,

@@ -71,7 +71,7 @@ export function SettingsPanel({
   async function clearStatistics() {
     try {
       if (await window.desktopApi.clearStatistics()) {
-        setMessage('键鼠统计已清除，成长数据保持不变。');
+        setMessage('键鼠统计已清除；成长、掉落进度和背包保持不变。');
         onDataChanged();
       }
     } catch {
@@ -150,6 +150,51 @@ export function SettingsPanel({
           </label>
           <label className="setting-row">
             <span>
+              <strong>宠物大小</strong>
+              <small>宠物、装扮、地毯和交互区域会一起缩放</small>
+            </span>
+            <select
+              value={settings.petScale}
+              disabled={busy}
+              onChange={(event) =>
+                void update({
+                  petScale: Number(event.target.value) as 25 | 50 | 75 | 100 | 125,
+                })
+              }
+            >
+              {[25, 50, 75, 100, 125].map((scale) => (
+                <option value={scale} key={scale}>
+                  {scale}%
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="setting-row">
+            <span>
+              <strong>屏幕边缘吸附</strong>
+              <small>靠近底边或左右边缘时进入贴边动作</small>
+            </span>
+            <input
+              type="checkbox"
+              checked={settings.edgeSnapEnabled}
+              disabled={busy}
+              onChange={(event) => void update({ edgeSnapEnabled: event.target.checked })}
+            />
+          </label>
+          <label className="setting-row">
+            <span>
+              <strong>键鼠动作反馈</strong>
+              <small>输入时触发短暂的打字或好奇动作</small>
+            </span>
+            <input
+              type="checkbox"
+              checked={settings.inputReactionsEnabled}
+              disabled={busy}
+              onChange={(event) => void update({ inputReactionsEnabled: event.target.checked })}
+            />
+          </label>
+          <label className="setting-row">
+            <span>
               <strong>开机启动</strong>
               <small>
                 {settings.canLaunchAtLogin ? '登录 Windows 后自动启动 DeskPet' : '仅打包版本可设置'}
@@ -207,10 +252,7 @@ export function SettingsPanel({
           <span className="shield-mark">✓</span>
           <div>
             <strong>只记录聚合次数</strong>
-            <p>
-              DeskPet
-              不保存按键内容、输入顺序、鼠标位置、轨迹、窗口标题或访问的网站。数据不会自动上传。
-            </p>
+            <p>用于计算经验、装扮掉落和活动趋势，可随时暂停或清除。</p>
           </div>
         </div>
         <div className="settings-list">
@@ -325,16 +367,9 @@ export function SettingsPanel({
         <div className="license-card">
           <CatalogIcon src={UI_ICONS.app} fallback={UI_ICONS.app} alt="" />
           <div>
-            <strong>DeskPet {settings.appVersion} · 成长与收藏</strong>
-            <p>
-              v1.1
-              新增等级解锁路线、每日签到、成就、合成工坊、五槽位饰品与四个新工具；输入与专注的经验不再封顶。
-            </p>
-            <p>
-              角色、装扮、场景与界面图标来自 Microsoft Fluent Emoji（MIT 许可证），已统一处理为透明
-              PNG；完整来源与许可文本见项目文档 docs/THIRD_PARTY_NOTICES.md 与
-              public/assets/licenses/。
-            </p>
+            <strong>DeskPet {settings.appVersion} · Version 2</strong>
+            <p>新增键盘随机装扮、星星币兑换、成长纪念、宠物缩放、屏幕边缘动作和键鼠反馈。</p>
+            <p>完整素材来源与许可文本见项目文档 docs/THIRD_PARTY_NOTICES.md。</p>
           </div>
         </div>
       </section>
@@ -344,7 +379,7 @@ export function SettingsPanel({
           <CatalogIcon className="brand-paw" src={UI_ICONS.app} fallback={UI_ICONS.app} alt="" />
           <div>
             <strong>DeskPet {settings.appVersion}</strong>
-            <small>本地优先 · 离线可用 · 无账号</small>
+            <small>桌面陪伴 · 成长收藏 · 专注工具</small>
           </div>
         </div>
         <button className="text-button" onClick={() => void replayOnboarding()}>

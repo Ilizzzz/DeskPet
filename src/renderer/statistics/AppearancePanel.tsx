@@ -125,7 +125,7 @@ export function AppearancePanel() {
           <div>
             <span className="eyebrow">SCENES</span>
             <h2>场景</h2>
-            <p>场景只影响桌宠背后的氛围，不会替换你的壁纸。</p>
+            <p>选择宠物脚下的小地毯，也可以保持无地面装饰。</p>
           </div>
         </div>
         <div className="scene-grid">
@@ -197,7 +197,7 @@ export function AppearancePanel() {
                       }`}
                       aria-pressed={selected}
                       aria-label={`${item.name}，${RARITY_LABELS[item.rarity]}，${
-                        unlocked ? `拥有 ${quantity} 件` : `等级 ${item.unlockLevel} 解锁，尚未拥有`
+                        unlocked ? `拥有 ${quantity} 件` : '尚未拥有，可通过掉落或兑换获得'
                       }`}
                       disabled={!unlocked || busy}
                       onClick={() => void change({ equipped: { slot, itemId: item.id } })}
@@ -211,9 +211,7 @@ export function AppearancePanel() {
                           <span className={`rarity-badge rarity-${item.rarity}`}>
                             {RARITY_LABELS[item.rarity]}
                           </span>
-                          <small>
-                            {unlocked ? `拥有 ${quantity}` : `Lv.${item.unlockLevel} 解锁`}
-                          </small>
+                          <small>{unlocked ? `拥有 ${quantity}` : '尚未拥有'}</small>
                         </span>
                       </span>
                     </button>

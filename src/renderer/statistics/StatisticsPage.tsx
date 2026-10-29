@@ -40,7 +40,7 @@ const pages: readonly {
     label: '外观',
     icon: UI_ICONS.appearance,
     title: '外观与收藏',
-    description: '更换伙伴、场景和五槽位饰品，合成并收集全部装扮。',
+    description: '更换伙伴、地毯和五槽位饰品，查看掉落、兑换与收藏进度。',
   },
   {
     id: 'tools',
@@ -54,7 +54,7 @@ const pages: readonly {
     label: '设置',
     icon: UI_ICONS.settings,
     title: '设置与隐私',
-    description: '控制统计、动画、开机启动和本地数据，全部只在本机生效。',
+    description: '调整宠物大小、动作、统计、开机启动和数据管理。',
   },
 ];
 
@@ -105,7 +105,7 @@ export function StatisticsPage() {
           <CatalogIcon className="brand-paw" src={UI_ICONS.app} fallback={UI_ICONS.app} />
           <div>
             <strong>DeskPet</strong>
-            <small>LOCAL COMPANION</small>
+            <small>DESKTOP COMPANION</small>
           </div>
         </div>
         <nav aria-label="控制中心导航">
@@ -124,8 +124,8 @@ export function StatisticsPage() {
         <div className="sidebar-privacy">
           <CatalogIcon src={UI_ICONS.checkin} fallback={UI_ICONS.app} alt="" />
           <div>
-            <strong>本地优先</strong>
-            <small>数据不会自动上传</small>
+            <strong>今日陪伴</strong>
+            <small>成长、装扮与专注</small>
           </div>
         </div>
         <small className="sidebar-version">v{settings?.appVersion ?? '1.1.0'}</small>

@@ -1392,10 +1392,55 @@ button:disabled {
 .pet-preview-ground {
   position: absolute;
   z-index: 0;
-  right: 0;
-  bottom: 0;
-  left: 0;
-  height: 34%;
+  right: 20px;
+  bottom: 8px;
+  left: 20px;
+  height: 54px;
+  border: 5px solid color-mix(in srgb, var(--ground-accent, white) 75%, transparent);
+  border-radius: 50%;
+  box-shadow:
+    inset 0 0 0 3px color-mix(in srgb, var(--ground-accent, white) 35%, transparent),
+    0 7px 10px rgb(55 39 31 / 16%);
+}
+
+.setting-row select {
+  min-width: 100px;
+  padding: 8px 10px;
+  border: 1px solid var(--line, #e5d7ca);
+  border-radius: 10px;
+  color: inherit;
+  background: #fff;
+}
+
+.wishlist-card .craft-head {
+  align-items: center;
+}
+
+.wishlist-card .craft-head img {
+  width: 64px;
+  height: 64px;
+}
+
+.card-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.probability-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 8px;
+}
+
+.probability-list > span {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 9px 12px;
+  border: 1px solid #eadfd5;
+  border-radius: 10px;
+  background: #fffdfa;
 }
 
 .pet-preview-character {
@@ -1796,6 +1841,44 @@ button:disabled {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
   gap: 8px;
+}
+
+.last-copy-toggle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0 0 14px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--canvas);
+}
+
+.last-copy-toggle span {
+  display: grid;
+  gap: 2px;
+}
+
+.last-copy-toggle small {
+  color: var(--muted);
+}
+
+.fragment-converter {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0 0 14px;
+  color: var(--muted);
+}
+
+.fragment-converter label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.fragment-converter input {
+  width: 76px;
 }
 
 .inventory-item {

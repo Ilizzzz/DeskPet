@@ -1,18 +1,19 @@
 import { useState } from 'react';
 import { CHARACTERS, ITEMS, SCENES, UI_ICONS } from '../../data/catalogs/appearance';
 import { RARITY_LABELS, type Appearance } from '../../shared/types/appearance';
+import { itemEconomy } from '../../data/catalogs/economy';
 import { CatalogIcon } from './CatalogIcon';
 import { isTransparentScene, sceneBackgroundStyle } from './scene-style';
 
 type Tab = 'item' | 'character' | 'scene';
 
 const TABS: readonly { id: Tab; label: string }[] = [
-  { id: 'item', label: '装扮 25' },
-  { id: 'character', label: '伙伴 8' },
-  { id: 'scene', label: '场景 8' },
+  { id: 'item', label: `装扮 ${ITEMS.length}` },
+  { id: 'character', label: `伙伴 ${CHARACTERS.length}` },
+  { id: 'scene', label: `地面 ${SCENES.length}` },
 ];
 
-/** 收藏图鉴：未获得的条目显示剪影与解锁等级，方便查看收集目标。 */
+/** 收藏图鉴：未获得的条目显示剪影与获得方式，方便查看收集目标。 */
 export function CollectionPanel({ appearance }: { appearance: Appearance }) {
   const [tab, setTab] = useState<Tab>('item');
 
@@ -24,7 +25,7 @@ export function CollectionPanel({ appearance }: { appearance: Appearance }) {
   const hasUnlock = (id: string, level: number) =>
     appearance.unlocks.includes(id) || appearance.level >= level;
 
-  const itemCount = ITEMS.filter((item) => ownedItems.has(item.id)).length;
+  const itemCount = ITEMS.filter((item) => appearance.discoveredItemIds.includes(item.id)).length;
   const characterCount = CHARACTERS.filter((entry) =>
     hasUnlock(entry.id, entry.unlockLevel),
   ).length;
@@ -37,9 +38,11 @@ export function CollectionPanel({ appearance }: { appearance: Appearance }) {
         <div>
           <span className="eyebrow">COLLECTION</span>
           <h2>收藏图鉴</h2>
-          <p>未获得的收藏会显示剪影，并标注需要的等级。</p>
+          <p>未获得的收藏会显示剪影，并标注掉落、兑换或成长纪念来源。</p>
         </div>
-        <span className="privacy-chip">已收集 {totalCount} / 41</span>
+        <span className="privacy-chip">
+          已收集 {totalCount} / {ITEMS.length + CHARACTERS.length + SCENES.length}
+        </span>
       </div>
       <div className="unlock-toolbar">
         <div className="filter-chips" role="group" aria-label="切换图鉴分类">
@@ -66,18 +69,28 @@ export function CollectionPanel({ appearance }: { appearance: Appearance }) {
         <div className="collection-grid" aria-label="装扮收藏">
           {ITEMS.map((item) => {
             const owned = ownedItems.get(item.id) ?? 0;
+            const discovered = appearance.discoveredItemIds.includes(item.id);
+            const economy = itemEconomy(item.id);
             return (
               <article
-                className={owned > 0 ? 'collection-item' : 'collection-item locked'}
+                className={discovered ? 'collection-item' : 'collection-item locked'}
                 key={item.id}
                 aria-label={`${item.name}，${
-                  owned > 0 ? `已收集 ${owned} 件` : `未获得，等级 ${item.unlockLevel} 解锁`
+                  owned > 0 ? `当前拥有 ${owned} 件` : discovered ? '曾经获得' : '尚未获得'
                 }`}
               >
                 <CatalogIcon src={item.asset} fallback={UI_ICONS.app} />
                 <strong>{item.name}</strong>
                 <small>
-                  {owned > 0 ? RARITY_LABELS[item.rarity] : `Lv.${item.unlockLevel} 解锁`}
+                  {owned > 0
+                    ? `${RARITY_LABELS[item.rarity]} · 拥有 ${owned}`
+                    : discovered
+                      ? '曾获得 · 可兑换取回'
+                      : economy?.source === 'milestone'
+                        ? `Lv.${economy.milestoneLevel} 纪念`
+                        : economy?.source === 'shop'
+                          ? '仅星星币兑换'
+                          : '掉落或兑换'}
                 </small>
               </article>
             );

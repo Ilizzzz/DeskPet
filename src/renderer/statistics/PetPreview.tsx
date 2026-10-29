@@ -1,7 +1,13 @@
 import type { CSSProperties } from 'react';
 import { ITEM_SLOTS } from '../../shared/types/appearance';
 import type { Appearance } from '../../shared/types/appearance';
-import { CHARACTERS, ITEM_ANCHORS, ITEMS, SCENES, UI_ICONS } from '../../data/catalogs/appearance';
+import {
+  CHARACTERS,
+  ITEMS,
+  SCENES,
+  UI_ICONS,
+  resolvedAnchor,
+} from '../../data/catalogs/appearance';
 import { CatalogIcon } from './CatalogIcon';
 import { isTransparentScene, sceneBackgroundStyle } from './scene-style';
 
@@ -16,12 +22,10 @@ const SCALE = CHARACTER_SIZE / ART_SIZE;
 export function PetPreview({ appearance }: { appearance: Appearance }) {
   const character = CHARACTERS.find((entry) => entry.id === appearance.character) ?? CHARACTERS[0];
   const scene = SCENES.find((entry) => entry.id === appearance.scene) ?? SCENES[0];
-  const anchors = ITEM_ANCHORS[character.id] ?? ITEM_ANCHORS.cat;
-
   const equipped = ITEM_SLOTS.flatMap((slot) => {
     const item = ITEMS.find((entry) => entry.id === appearance.equipped[slot]);
     if (!item) return [];
-    const anchor = anchors[slot];
+    const anchor = resolvedAnchor(character.id, slot, item.id);
     const transform = [
       anchor.rotate ? `rotate(${anchor.rotate}deg)` : '',
       anchor.flip ? 'scaleX(-1)' : '',
@@ -30,11 +34,13 @@ export function PetPreview({ appearance }: { appearance: Appearance }) {
       .join(' ');
     return [
       {
+        slot,
         item,
         style: {
           left: CHARACTER_LEFT + anchor.left * SCALE,
           top: CHARACTER_TOP + anchor.top * SCALE,
           width: anchor.width * SCALE,
+          zIndex: slot === 'back' ? 1 : 3,
           transform: transform || undefined,
         } satisfies CSSProperties,
       },
@@ -56,7 +62,15 @@ export function PetPreview({ appearance }: { appearance: Appearance }) {
       >
         <div className="pet-preview-scene" style={sceneBackgroundStyle(scene)} />
         {scene.theme.ground && (
-          <div className="pet-preview-ground" style={{ background: scene.theme.ground }} />
+          <div
+            className="pet-preview-ground"
+            style={
+              {
+                background: scene.theme.ground,
+                '--ground-accent': scene.theme.groundAccent,
+              } as CSSProperties
+            }
+          />
         )}
         {scene.decorations
           .filter((decoration) => (decoration.z ?? 1) < 4)
@@ -77,22 +91,36 @@ export function PetPreview({ appearance }: { appearance: Appearance }) {
               onError={(event) => (event.currentTarget.hidden = true)}
             />
           ))}
+        {equipped
+          .filter(({ slot }) => slot === 'back')
+          .map(({ item, style }) => (
+            <img
+              className="pet-preview-item"
+              key={item.id}
+              src={item.asset}
+              alt=""
+              style={style}
+              onError={(event) => (event.currentTarget.hidden = true)}
+            />
+          ))}
         <CatalogIcon
           className="pet-preview-character"
           src={character.asset}
           fallback={UI_ICONS.app}
           alt=""
         />
-        {equipped.map(({ item, style }) => (
-          <img
-            className="pet-preview-item"
-            key={item.id}
-            src={item.asset}
-            alt=""
-            style={style}
-            onError={(event) => (event.currentTarget.hidden = true)}
-          />
-        ))}
+        {equipped
+          .filter(({ slot }) => slot !== 'back')
+          .map(({ item, style }) => (
+            <img
+              className="pet-preview-item"
+              key={item.id}
+              src={item.asset}
+              alt=""
+              style={style}
+              onError={(event) => (event.currentTarget.hidden = true)}
+            />
+          ))}
         {scene.decorations
           .filter((decoration) => (decoration.z ?? 1) >= 4)
           .map((decoration, index) => (

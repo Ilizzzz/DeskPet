@@ -139,9 +139,9 @@ export function GrowthPanel({ data }: { data: StatisticsSnapshot }) {
             </p>
           </article>
           <article>
-            <CatalogIcon src={UI_ICONS.fragments} fallback={UI_ICONS.app} />
-            <strong>星光碎片</strong>
-            <p>每完成 {GROWTH_RULES.focusSessionsPerFragment} 次专注额外获得 1 星光碎片。</p>
+            <CatalogIcon src={UI_ICONS.keyboard} fallback={UI_ICONS.app} />
+            <strong>随机装扮</strong>
+            <p>每累计 1,500 次有效键盘按下，会随机发现 1 件装扮。</p>
           </article>
           <article>
             <CatalogIcon src={UI_ICONS.achievement} fallback={UI_ICONS.app} />

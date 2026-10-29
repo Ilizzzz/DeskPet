@@ -44,7 +44,7 @@ export function OverviewPanel({
         <div>
           <span className="eyebrow">TODAY WITH DESKPET</span>
           <h2>{greeting()}，今天也在稳稳成长</h2>
-          <p>每一次有效操作都会变成经验和新的收藏，所有记录只保存在这台电脑。</p>
+          <p>每一次有效操作都会变成经验，也会让下一件随机装扮更近一点。</p>
           <div className="hero-actions">
             <button className="primary-button" onClick={() => navigate('tools')}>
               开始专注
@@ -164,7 +164,7 @@ export function OverviewPanel({
             <CatalogIcon src={UI_ICONS.appearance} fallback={UI_ICONS.app} />
             <span>
               <strong>更换装扮</strong>
-              <small>伙伴、场景与五槽位饰品</small>
+              <small>伙伴、地毯与五槽位饰品</small>
             </span>
           </button>
           <button className="quick-card" onClick={() => navigate('tools')}>
@@ -183,7 +183,7 @@ export function OverviewPanel({
             <span className="eyebrow">ACTIVITY</span>
             <h2>最近 7 天</h2>
           </div>
-          <span className="privacy-chip">仅本机保存</span>
+          <span className="privacy-chip">7 天趋势</span>
         </div>
         {days.every((day) => day.keyboardCount + day.mouseCount === 0) ? (
           <div className="empty-state">

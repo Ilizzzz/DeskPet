@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { UI_ICONS } from '../../data/catalogs/appearance';
+import { LEVEL_REWARDS } from '../../data/catalogs/growth';
 import { UNLOCKS } from '../../data/catalogs/unlocks';
 import {
   UNLOCK_CATEGORY_LABELS,
@@ -26,6 +27,19 @@ const CATEGORY_ICONS: Record<UnlockCategory, string> = {
 };
 
 const CATEGORIES: readonly UnlockCategory[] = ['character', 'scene', 'item', 'tool'];
+const COMPANION_MILESTONES = [
+  { level: 1, name: '键鼠回应', description: '打字、好奇与待机动作' },
+  { level: 10, name: '成长对话', description: '伙伴会回应已经到达的等级' },
+  { level: 20, name: '资深陪伴对话', description: '新增长期陪伴台词' },
+] as const;
+
+const COIN_MILESTONES = Object.entries(LEVEL_REWARDS).flatMap(([rawLevel, rewards]) => {
+  const amount = rewards.reduce(
+    (sum, reward) => sum + (reward.type === 'coins' ? reward.amount : 0),
+    0,
+  );
+  return amount > 0 ? [{ level: Number(rawLevel), amount }] : [];
+});
 
 /** 按等级解锁的内容路线，伙伴/场景/装扮/工具可筛选查看。 */
 export function UnlockRoadmap({ level }: { level: number }) {
@@ -57,7 +71,7 @@ export function UnlockRoadmap({ level }: { level: number }) {
         <div>
           <span className="eyebrow">ROADMAP</span>
           <h2>解锁路线</h2>
-          <p>达到等级后，伙伴、场景与装扮会自动进入账户，工具会直接可用。</p>
+          <p>成长会带来新伙伴、地毯、纪念装扮与工具；其他装扮可通过发现或兑换获得。</p>
         </div>
         <span className="privacy-chip">
           已解锁 {unlockedCount} / {UNLOCKS.length}
@@ -106,6 +120,66 @@ export function UnlockRoadmap({ level }: { level: number }) {
           </ul>
         </div>
       ))}
+      {filter === 'all' && (
+        <>
+          <div className="unlock-group">
+            <h3>陪伴动作与对话</h3>
+            <ul className="unlock-grid" aria-label="陪伴动作与对话里程碑">
+              {COMPANION_MILESTONES.map((entry) => {
+                const unlocked = entry.level <= level;
+                return (
+                  <li
+                    className={`unlock-item ${unlocked ? 'unlocked' : 'locked'}`}
+                    key={entry.level}
+                  >
+                    <span className="unlock-icon">
+                      <CatalogIcon src={UI_ICONS.app} fallback={UI_ICONS.app} />
+                    </span>
+                    <span className="unlock-info">
+                      <strong>{entry.name}</strong>
+                      <small>{entry.description}</small>
+                    </span>
+                    <span className="unlock-meta">
+                      <span className="level-chip">Lv.{entry.level}</span>
+                      <span className="unlock-state">
+                        {unlocked ? '已解锁' : `还差 ${entry.level - level} 级`}
+                      </span>
+                    </span>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+          <div className="unlock-group">
+            <h3>等级星星币</h3>
+            <ul className="unlock-grid" aria-label="等级星星币奖励">
+              {COIN_MILESTONES.map((entry) => {
+                const unlocked = entry.level <= level;
+                return (
+                  <li
+                    className={`unlock-item ${unlocked ? 'unlocked' : 'locked'}`}
+                    key={entry.level}
+                  >
+                    <span className="unlock-icon">
+                      <CatalogIcon src={UI_ICONS.coins} fallback={UI_ICONS.app} />
+                    </span>
+                    <span className="unlock-info">
+                      <strong>{entry.amount} 星星币</strong>
+                      <small>升级时自动发放一次</small>
+                    </span>
+                    <span className="unlock-meta">
+                      <span className="level-chip">Lv.{entry.level}</span>
+                      <span className="unlock-state">
+                        {unlocked ? '已获得' : `还差 ${entry.level - level} 级`}
+                      </span>
+                    </span>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+        </>
+      )}
     </section>
   );
 }

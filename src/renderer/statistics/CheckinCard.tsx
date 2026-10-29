@@ -67,9 +67,7 @@ export function CheckinCard() {
         <div>
           <span className="eyebrow">CHECK-IN</span>
           <strong>每日签到</strong>
-          <small>
-            {status?.checkedInToday ? '今天已经签到，明天继续连签' : '签到领取星星币和星光碎片'}
-          </small>
+          <small>{status?.checkedInToday ? '今天已经签到，明天继续连签' : '签到领取星星币'}</small>
         </div>
         <CatalogIcon src={UI_ICONS.checkin} fallback={UI_ICONS.coins} alt="" />
       </div>
@@ -117,9 +115,7 @@ export function CheckinCard() {
           >
             {status.checkedInToday ? '今天已签到' : busy ? '正在签到…' : '立即签到'}
           </button>
-          <p className="checkin-footnote">
-            每天签到 +1 星光碎片，每连续 7 天额外 +2 星光碎片；星星币随连续天数递增。
-          </p>
+          <p className="checkin-footnote">星星币随连续天数递增，每连续 7 天还有额外奖励。</p>
         </>
       )}
     </section>

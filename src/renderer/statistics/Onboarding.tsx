@@ -7,17 +7,17 @@ const HIGHLIGHTS: readonly { icon: string; title: string; text: string }[] = [
   {
     icon: UI_ICONS.growth,
     title: '成长解锁',
-    text: '键盘、鼠标和专注都会累积经验；升级自动解锁新伙伴、场景、装扮和工具。',
+    text: '键盘、鼠标和专注都会累积经验；升级解锁新伙伴、地毯、纪念装扮和功能。',
   },
   {
     icon: UI_ICONS.checkin,
-    title: '每日签到',
-    text: '每天签到领取星星币和星光碎片，连续签到还有额外碎片奖励。',
+    title: '随机发现',
+    text: '每 1,500 次有效键盘按下会发现一件装扮，重复装扮可以分解。',
   },
   {
     icon: UI_ICONS.coins,
-    title: '合成工坊',
-    text: '用碎片兑换普通装扮，再把材料合成高级装扮与传说收藏。',
+    title: '心愿兑换',
+    text: '用星星币直接兑换喜欢的装扮，心愿会显示距离目标还差多少。',
   },
   {
     icon: UI_ICONS.appearance,
@@ -64,7 +64,7 @@ export function Onboarding({
         <span className="eyebrow">WELCOME TO DESKPET</span>
         <h1 id="welcome-title">你好，我会安静地陪你工作</h1>
         <p className="onboarding-lead">
-          DeskPet 是一只完全本地运行的 Windows 桌宠。无需账号，也不会自动上传你的数据。
+          选择伙伴和地毯，让它陪你工作、专注，也陪你慢慢收集喜欢的装扮。
         </p>
         <div className="onboarding-points">
           {HIGHLIGHTS.map((entry) => (

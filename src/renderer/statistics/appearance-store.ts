@@ -2,9 +2,9 @@ import { useSyncExternalStore } from 'react';
 import type { Appearance } from '../../shared/types/appearance';
 
 /**
- * 外观页共享缓存：外观与背包两栏共用同一份 Appearance，换装、合成或分解后同步刷新。
+ * 外观页共享缓存：外观与背包两栏共用同一份 Appearance，换装、兑换或分解后同步刷新。
  *
- * 数据源仍然是 Preload 暴露的 getAppearance / setAppearance / craftItem / dismantleItem，
+ * 数据源仍然是 Preload 暴露的 getAppearance / setAppearance / purchaseItem / dismantleItem，
  * 这里只负责缓存与订阅，不保存任何业务状态。
  */
 let cached: Appearance | undefined;

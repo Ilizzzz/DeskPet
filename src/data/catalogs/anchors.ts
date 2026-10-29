@@ -29,11 +29,11 @@ export const ANCHORS: Readonly<Record<string, CharacterAnchors>> = {
     back: { left: 120, top: 80, width: 120 },
   },
   math_master: {
-    head: { left: 52, top: -8, width: 152 },
-    neck: { left: 80, top: 176, width: 96 },
-    face: { left: 60, top: 66, width: 136 },
-    hand: { left: 154, top: 178, width: 72 },
-    back: { left: 126, top: 126, width: 126 },
+    head: { left: 88, top: 4, width: 80 },
+    neck: { left: 101, top: 84, width: 55 },
+    face: { left: 98, top: 42, width: 60 },
+    hand: { left: 160, top: 132, width: 55 },
+    back: { left: 118, top: 94, width: 108 },
   },
   dog: {
     head: { left: 55, top: -5, width: 105 },

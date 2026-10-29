@@ -7,7 +7,7 @@ import { fileURLToPath } from 'node:url';
 const root = fileURLToPath(new URL('..', import.meta.url));
 const registryPath = join(root, 'public', 'assets', 'licenses', 'sources.json');
 const characterIds = ['cat', 'chipmunk', 'dog', 'hedgehog', 'penguin', 'rabbit', 'tiger', 'turtle'];
-const userProvidedCharacters = ['math_master'];
+const compositedCharacters = ['math_master'];
 const itemIds = [
   'backpack_school',
   'balloon_red',
@@ -48,11 +48,11 @@ const targets = [
     path: `characters/${id}.png`,
     origin: 'generated',
   })),
-  ...userProvidedCharacters.map((id) => ({
+  ...compositedCharacters.map((id) => ({
     id,
     category: 'character',
     path: `characters/${id}.png`,
-    origin: 'user-provided',
+    origin: 'user-composited',
   })),
   ...itemIds.map((id) => ({
     id,
@@ -71,28 +71,30 @@ const updatedAssets = targets.map((target) => {
   const localPath = `public/assets/${target.path}`;
   const fullPath = join(root, ...localPath.split('/'));
   const buffer = readFileSync(fullPath);
-  const userProvided = target.origin === 'user-provided';
+  const userComposited = target.origin === 'user-composited';
   return {
     asset_id: target.id,
     category: target.category,
     emoji_name: null,
     local_path: localPath,
     source_url: null,
-    author: userProvided ? 'DeskPet user' : 'DeskPet contributors using OpenAI ImageGen',
-    license: userProvided
-      ? 'User-provided asset authorized for use in DeskPet'
+    author: userComposited
+      ? 'DeskPet user and DeskPet contributors using OpenAI ImageGen'
+      : 'DeskPet contributors using OpenAI ImageGen',
+    license: userComposited
+      ? 'User-provided head and project-generated body authorized for use in DeskPet'
       : 'Project-generated asset; see docs/design/ART_GENERATION.md',
     download_date: '2026-10-29',
-    modifications: userProvided
-      ? 'Original portrait proportionally fitted onto a 256x256 RGBA canvas without cropping or generative edits'
+    modifications: userComposited
+      ? 'Original head extracted without generative edits, composited onto a generated seated body, and proportionally fitted onto a 256x256 RGBA canvas'
       : target.category === 'character'
         ? 'Generated on a transparent canvas and resized to a 256x256 RGBA PNG'
         : 'Generated as a transparent sprite sheet, split by grid, proportionally fitted and exported as a 256x256 RGBA PNG',
-    attribution: userProvided
-      ? 'Original portrait provided by the DeskPet user'
+    attribution: userComposited
+      ? 'Original head provided by the DeskPet user; body generated for DeskPet with OpenAI ImageGen'
       : 'Generated specifically for DeskPet Version 2 with OpenAI ImageGen',
-    generation_prompt_group: userProvided
-      ? null
+    generation_prompt_group: userComposited
+      ? 'v2-math-master-body'
       : target.category === 'character'
         ? 'v2-anime-character'
         : 'v2-anime-outfit',

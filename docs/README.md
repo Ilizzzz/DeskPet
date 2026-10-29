@@ -4,10 +4,12 @@
 
 - [开发手册](DEVELOPMENT_MANUAL.md)
 - [架构概览](ARCHITECTURE.md)
-- [1.1.2 发布说明](RELEASE_NOTES.md)
+- [2.0.0 发布说明](RELEASE_NOTES.md)
 - [TASK-011 设计契约](TASK011_DESIGN.md)
 - [TASK-011 素材清单](TASK011_ASSETS.md)
 - [美术资源指南](ASSET_GUIDE.md)
+- [V2 图像生成说明](V2_ART_GENERATION_GUIDE.md)
+- [V2 经济首轮测算](V2_ECONOMY_BALANCE.md)
 - [隐私说明](PRIVACY.md)
 - [已知问题与发布检查](KNOWN_ISSUES.md)
 - [安装与卸载](UNINSTALL.md)

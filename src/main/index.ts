@@ -29,9 +29,16 @@ import {
 } from '../services/input-monitor/input-preferences';
 import { PET_WINDOW_SIZE } from '../shared/constants/pet';
 import { registerFeatureIpc } from './ipc/features';
+import {
+  createPetDragSession,
+  selectPetSnapEdge,
+  stepPetDrag,
+  type PetDragSession,
+  type PetEdge,
+} from './pet-drag';
 
 let petScale: 25 | 50 | 75 | 100 | 125 = 100;
-let petEdge: 'free' | 'bottom' | 'left' | 'right' = 'free';
+let petEdge: PetEdge = 'free';
 function petWindowSize(): { width: number; height: number } {
   const size = Math.round((PET_WINDOW_SIZE * petScale) / 100);
   return { width: size, height: size };
@@ -54,6 +61,7 @@ let inputError: string | null = null;
 let systemSuspended = false;
 let petDragging = false;
 let petDragTimer: NodeJS.Timeout | undefined;
+let petDragSession: PetDragSession | undefined;
 const inputMonitor = new InputMonitor(
   (counts, days) => {
     pending.push(...days);
@@ -336,24 +344,40 @@ function beginPetDrag(): void {
   ignoringMouse = false;
   const cursor = screen.getCursorScreenPoint();
   const [windowX, windowY] = petWindow.getPosition();
-  const offsetX = cursor.x - windowX;
-  const offsetY = cursor.y - windowY;
+  const releaseDistance = Math.max(6, Math.round((10 * petScale) / 100));
+  petDragSession = createPetDragSession(
+    cursor,
+    { x: windowX, y: windowY },
+    petEdge,
+    releaseDistance,
+  );
   if (petDragTimer) clearInterval(petDragTimer);
   petDragTimer = setInterval(() => {
-    if (!petWindow || petWindow.isDestroyed()) return;
+    if (!petWindow || petWindow.isDestroyed() || !petDragSession) return;
     const point = screen.getCursorScreenPoint();
-    petWindow.setPosition(Math.round(point.x - offsetX), Math.round(point.y - offsetY));
+    const step = stepPetDrag(petDragSession, point);
+    petDragSession = step.session;
+    if (step.edge !== petEdge) {
+      petEdge = step.edge;
+      sendPetPlacement();
+    }
+    const [currentX, currentY] = petWindow.getPosition();
+    if (currentX !== step.position.x || currentY !== step.position.y)
+      petWindow.setPosition(Math.round(step.position.x), Math.round(step.position.y));
   }, 8);
 }
 function endPetDrag(): void {
   if (!petDragging) return;
   petDragging = false;
+  const releasedEdge =
+    petDragSession?.released && petDragSession.edge !== 'free' ? petDragSession.edge : undefined;
+  petDragSession = undefined;
   if (petDragTimer) {
     clearInterval(petDragTimer);
     petDragTimer = undefined;
   }
   if (petWindow && !petWindow.isDestroyed()) {
-    snapPetToEdge(petWindow);
+    snapPetToEdge(petWindow, releasedEdge);
     savePosition(petWindow);
   }
 }
@@ -375,7 +399,7 @@ function sendPetPreferences(): void {
   });
 }
 
-function snapPetToEdge(window: BrowserWindow): void {
+function snapPetToEdge(window: BrowserWindow, excludedEdge?: Exclude<PetEdge, 'free'>): void {
   const preferences = statisticsStore?.preferences.get();
   if (!preferences?.edgeSnapEnabled) {
     petEdge = 'free';
@@ -390,12 +414,8 @@ function snapPetToEdge(window: BrowserWindow): void {
     right: Math.abs(area.x + area.width - (bounds.x + bounds.width)),
     bottom: Math.abs(area.y + area.height - (bounds.y + bounds.height)),
   };
-  const nearest = (Object.entries(distances) as ['left' | 'right' | 'bottom', number][]).sort(
-    (left, right) => left[1] - right[1],
-  )[0];
-  if (nearest[1] > threshold) petEdge = 'free';
-  else {
-    petEdge = nearest[0];
+  petEdge = selectPetSnapEdge(distances, threshold, excludedEdge);
+  if (petEdge !== 'free') {
     if (petEdge === 'left') window.setPosition(area.x, bounds.y);
     else if (petEdge === 'right') window.setPosition(area.x + area.width - bounds.width, bounds.y);
     else window.setPosition(bounds.x, area.y + area.height - bounds.height);
@@ -1096,7 +1116,7 @@ function createWindow(): void {
     const shouldIgnore =
       clickThrough ||
       !window.isVisible() ||
-      !isInsidePet(screen.getCursorScreenPoint(), window.getBounds());
+      !isInsidePet(screen.getCursorScreenPoint(), window.getBounds(), petEdge);
     if (shouldIgnore !== ignoringMouse) {
       window.setIgnoreMouseEvents(shouldIgnore, { forward: true });
       ignoringMouse = shouldIgnore;

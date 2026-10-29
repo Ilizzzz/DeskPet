@@ -172,7 +172,7 @@ export function SettingsPanel({
           <label className="setting-row">
             <span>
               <strong>屏幕边缘吸附</strong>
-              <small>靠近底边或左右边缘时进入贴边动作</small>
+              <small>靠近边缘时吸附；向内轻拉越过短暂阻力即可脱离</small>
             </span>
             <input
               type="checkbox"

@@ -31,4 +31,15 @@ describe('pet hit testing', () => {
     ).toBe(true);
     expect(isInsidePet({ x: half.x + 2, y: half.y + 2 }, half)).toBe(false);
   });
+  it('keeps the animated edge pixels draggable without expanding the free hit area', () => {
+    const left = bounds.x + PET_ART_LEFT - 5;
+    const middleY = bounds.y + PET_ART_TOP + PET_ART_SIZE / 2;
+    expect(isInsidePet({ x: left, y: middleY }, bounds)).toBe(false);
+    expect(isInsidePet({ x: left, y: middleY }, bounds, 'left')).toBe(true);
+
+    const below = bounds.y + PET_ART_TOP + PET_ART_SIZE + 5;
+    const middleX = bounds.x + PET_ART_LEFT + PET_ART_SIZE / 2;
+    expect(isInsidePet({ x: middleX, y: below }, bounds)).toBe(false);
+    expect(isInsidePet({ x: middleX, y: below }, bounds, 'bottom')).toBe(true);
+  });
 });

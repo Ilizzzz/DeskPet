@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import { createHash } from 'node:crypto';
-import { readFileSync, statSync, writeFileSync } from 'node:fs';
+import { existsSync, readFileSync, statSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -46,7 +46,10 @@ const targets = [
 ];
 const localPaths = new Set(targets.map((target) => `public/assets/${target.path}`));
 const registry = JSON.parse(readFileSync(registryPath, 'utf8'));
-const untouched = registry.assets.filter((asset) => !localPaths.has(asset.local_path));
+const untouched = registry.assets.filter(
+  (asset) =>
+    !localPaths.has(asset.local_path) && existsSync(join(root, ...asset.local_path.split('/'))),
+);
 const generated = targets.map((target) => {
   const localPath = `public/assets/${target.path}`;
   const fullPath = join(root, ...localPath.split('/'));

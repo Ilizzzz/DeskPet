@@ -15,8 +15,7 @@
 
 ## Microsoft Fluent Emoji
 
-- `public/assets/icons/` 与保留的 `public/assets/decor/` 来自
-  [Microsoft Fluent Emoji](https://github.com/microsoft/fluentui-emoji)。
+- `public/assets/icons/` 来自 [Microsoft Fluent Emoji](https://github.com/microsoft/fluentui-emoji)。
 - 作者：Microsoft Corporation。
 - 许可证：MIT；完整文本见 `fluent-emoji-LICENSE.txt`。
 - 下载日期：2026-10-28；资源转存为 256×256 RGBA PNG。

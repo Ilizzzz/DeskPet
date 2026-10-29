@@ -23,6 +23,9 @@
 
 `StatisticsStore` 使用 Node 内置 SQLite，当前 `user_version = 17`。
 
+打开旧数据库时，迁移开始前先通过 SQLite `VACUUM INTO` 生成一致性备份
+`statistics.pre-v17.sqlite`；已有备份不会被后续启动覆盖。
+
 - v1–v14：统计、成长、钱包、基础外观和工具基础数据。
 - v15：五槽位外观、碎片、签到、成就和扩展工具。
 - v16：掉落进度、掉落记录、发现记录、心愿、经济流水及桌宠显示偏好。

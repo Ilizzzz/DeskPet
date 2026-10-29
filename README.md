@@ -63,7 +63,7 @@ $env:ELECTRON_MIRROR='https://npmmirror.com/mirrors/electron/'
 - `src/services`：统计、设置、奖励和输入监听等共享服务。
 - `src/data/catalogs`：角色、装扮、锚点、地毯、成长与经济配置。
 - `public/assets`：经登记的发布资源。
-- `docs`：按开发、产品、设计、发布、法律和历史分类的文档。
+- `docs`：按开发、产品、设计、发布和法律分类的文档。
 
 渲染进程保持沙箱和上下文隔离，不启用 Node 集成。跨进程写操作均由主进程校验并写入
 Electron 用户数据目录中的 SQLite 数据库。

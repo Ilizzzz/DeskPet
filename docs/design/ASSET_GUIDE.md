@@ -57,9 +57,6 @@ Microsoft Fluent Emoji（MIT）。逐文件来源、处理方式、字节数与 
 `public/assets/icons/summary.png`、`public/assets/icons/todo.png`、
 `public/assets/icons/tools.png`、`public/assets/icons/water.png`。
 
-`public/assets/decor/` 中的 V1 场景装饰仍保留来源登记，但 V2 场景已改为 CSS 椭圆地毯，
-不再把这些装饰或方形背景放进桌宠窗口。
-
 ## 校验
 
 ```powershell

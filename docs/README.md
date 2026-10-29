@@ -25,7 +25,6 @@
 
 - [资源指南](design/ASSET_GUIDE.md)
 - [图像生成与落地](design/ART_GENERATION.md)
-- `previews/`：角色、锚点、地毯和界面预览图。
 
 ### `release/` 发布与排障
 
@@ -38,9 +37,4 @@
 - [隐私说明](legal/PRIVACY.md)
 - [第三方声明](legal/THIRD_PARTY_NOTICES.md)
 
-### `history/` 历史归档
-
-- [TASK-011 历史设计](history/TASK011_DESIGN.md)
-- [TASK-011 历史素材清单](history/TASK011_ASSETS.md)
-
-历史归档只用于解释演进过程；当前规则以根目录 `DeskPet.md`、当前代码和产品分类文档为准。
+旧任务草案、失效截图和未被当前版本引用的素材不再保留；版本变化只在发布说明中摘要记录。

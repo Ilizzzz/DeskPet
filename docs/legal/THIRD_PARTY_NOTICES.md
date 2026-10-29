@@ -2,7 +2,7 @@
 
 ## Microsoft Fluent Emoji
 
-DeskPet 的界面图标和 `public/assets/decor/` 中保留的历史场景装饰来自
+DeskPet 的界面图标来自
 [Microsoft Fluent Emoji](https://github.com/microsoft/fluentui-emoji)。
 
 - 作者：Microsoft Corporation
